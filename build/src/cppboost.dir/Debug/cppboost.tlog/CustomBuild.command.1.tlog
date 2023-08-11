@@ -1,0 +1,10 @@
+^C:\USERS\KOCHUEV\DOCUMENTS\CPPBOOST\SRC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/kochuev/Documents/cppboost -BC:/Users/kochuev/Documents/cppboost/build --check-stamp-file C:/Users/kochuev/Documents/cppboost/build/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
