@@ -9,7 +9,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSError.h">
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\NS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Error.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSIImageRange.h">
@@ -18,22 +21,22 @@
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSImageProviderRange.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSUtils.h">
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AbstractWindowPositioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSContainer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\ValueProperties.h">
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Container.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\SequencedSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\OrderableSequencedSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AnyIterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

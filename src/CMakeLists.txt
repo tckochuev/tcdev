@@ -1,24 +1,40 @@
-add_compile_definitions(_HAS_AUTO_PTR_ETC=1)
+set(TARGET_NAME "${PROJECT_NAME}")
 
-add_executable(${PROJECT_NAME}
+#boost
+add_compile_definitions(_HAS_AUTO_PTR_ETC=1)
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.62.0 REQUIRED filesystem serialization)
+
+add_executable(
+    ${TARGET_NAME}
     main.cpp
-    VSError.h
+    NS.h
+    Error.h
     VSIImageRange.h
     VSIImageRange.ipp
     VSImageProviderRange.h
     VSImageProviderRange.ipp
-    VSUtils.h
+    Utils.h
     AbstractWindowPositioner.h
     AbstractWindowPositioner.cpp
-    VSContainer.h
-    ValueProperties.h
+    Container.h
     SequencedSet.h
     SequencedSet.ipp
     OrderableSequencedSet.h
     OrderableSequencedSet.ipp
+    AnyIterator.h
+    Result.h
+    Result.cpp
 )
 
 target_include_directories(
-    ${PROJECT_NAME} PRIVATE .
-    ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/lib/boost
+	${TARGET_NAME}
+	PRIVATE
+	${Boost_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+	${TARGET_NAME} 
+	PRIVATE
+	${Boost_LIBRARIES}
 )
