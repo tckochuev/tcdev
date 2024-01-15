@@ -7,6 +7,9 @@
     <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\AbstractWindowPositioner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\Result.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\NS.h">
@@ -39,6 +42,9 @@
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AnyIterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Result.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\kochuev\Documents\cppboost\src\CMakeLists.txt" />
@@ -48,6 +54,7 @@
     <None Include="C:\Users\kochuev\Documents\cppboost\src\VSImageProviderRange.ipp" />
     <None Include="C:\Users\kochuev\Documents\cppboost\src\SequencedSet.ipp" />
     <None Include="C:\Users\kochuev\Documents\cppboost\src\OrderableSequencedSet.ipp" />
+    <None Include="C:\Users\kochuev\Documents\cppboost\src\Result.ipp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

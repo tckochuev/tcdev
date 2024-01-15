@@ -3,7 +3,7 @@ set(TARGET_NAME "${PROJECT_NAME}")
 #boost
 add_compile_definitions(_HAS_AUTO_PTR_ETC=1)
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.62.0 REQUIRED filesystem serialization)
+find_package(Boost 1.62.0 REQUIRED filesystem serialization regex)
 
 add_executable(
     ${TARGET_NAME}
@@ -24,6 +24,7 @@ add_executable(
     OrderableSequencedSet.ipp
     AnyIterator.h
     Result.h
+    Result.ipp
     Result.cpp
 )
 

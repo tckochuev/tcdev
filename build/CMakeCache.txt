@@ -32,6 +32,12 @@ Boost_LIBRARY_DIR_DEBUG:PATH=C:/Boost/lib
 //Boost library directory RELEASE
 Boost_LIBRARY_DIR_RELEASE:PATH=C:/Boost/lib
 
+//Boost regex library (debug)
+Boost_REGEX_LIBRARY_DEBUG:FILEPATH=C:/Boost/lib/libboost_regex-vc140-mt-gd-1_62.lib
+
+//Boost regex library (release)
+Boost_REGEX_LIBRARY_RELEASE:FILEPATH=C:/Boost/lib/libboost_regex-vc140-mt-1_62.lib
+
 //Boost serialization library (debug)
 Boost_SERIALIZATION_LIBRARY_DEBUG:FILEPATH=C:/Boost/lib/libboost_serialization-vc140-mt-gd-1_62.lib
 
@@ -217,6 +223,10 @@ Boost_INCLUDE_DIR-ADVANCED:INTERNAL=1
 Boost_LIBRARY_DIR_DEBUG-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Boost_LIBRARY_DIR_RELEASE
 Boost_LIBRARY_DIR_RELEASE-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: Boost_REGEX_LIBRARY_DEBUG
+Boost_REGEX_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: Boost_REGEX_LIBRARY_RELEASE
+Boost_REGEX_LIBRARY_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Boost_SERIALIZATION_LIBRARY_DEBUG
 Boost_SERIALIZATION_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Boost_SERIALIZATION_LIBRARY_RELEASE
@@ -340,9 +350,9 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Boost
-FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/Boost][cfound components: filesystem serialization system ][v1.62.0(1.62.0)]
+FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/Boost][cfound components: filesystem serialization regex system ][v1.62.0(1.62.0)]
 //Components requested for this build tree.
-_Boost_COMPONENTS_SEARCHED:INTERNAL=filesystem;serialization;system
+_Boost_COMPONENTS_SEARCHED:INTERNAL=filesystem;regex;serialization;system
 //Last used Boost_INCLUDE_DIR value.
 _Boost_INCLUDE_DIR_LAST:INTERNAL=C:/Boost
 //Last used Boost_LIBRARY_DIR_DEBUG value.

@@ -2,11 +2,17 @@
 
 #include <vector>
 #include <set>
+#include <optional>
+
 #include "Utils.h"
+#include "Result.h"
 //#include "SequencedSet.h"
 
 #include <boost/range.hpp>
 #include <boost/range/any_range.hpp>
+#include <boost/range/adaptors.hpp>
+
+#include <boost/filesystem/path.hpp>
 
 #include <boost/type_erasure/any.hpp>
 #include <boost/type_erasure/any_cast.hpp>
@@ -26,6 +32,9 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/unordered_map.hpp>
+
+#include "Container.h"
 
 //template<typename ContainerT>
 //class ContainerAdaptor : public tc::ReversibleContainerAdaptor<ContainerT>
@@ -44,171 +53,111 @@
 //    Container m_container;
 //};
 
-//namespace bte = boost::type_erasure;
-//
-//using Concept = boost::mpl::vector<
-//    bte::copy_constructible<bte::_a>,
-//    bte::copy_constructible<bte::_b>,
-//    bte::copy_constructible<bte::_c>,
-//    bte::addable<bte::_a, bte::_b, bte::_a>,
-//    bte::dereferenceable<bte::_c, bte::_a>,
-//    bte::ostreamable<std::ostream, bte::_a>,
-//    bte::ostreamable<std::ostream, bte::_b>,
-//    bte::ostreamable<std::ostream, bte::_c>
-//>;
-//template<typename Placeholder>
-//using Any = bte::any<Concept, Placeholder>;
+#define MOUSE_BUTTONS \
+X(LeftButton,1)   \
+X(MiddleButton,1 << 1) \
+X(RightButton,1 << 2) \
+X(SideButton, 1 << 3)
 
-//inline namespace bte
-//{
-//
-//template<
-//    typename Value,
-//    typename Traversal,
-//    typename Reference = Value&,
-//    typename Difference = std::ptrdiff_t
-//>
-//using AnyIterator = boost::type_erasure::any<
-//    boost::mpl::vector<
-//        boost::type_erasure::iterator<
-//            Traversal,
-//            boost::type_erasure::_self,
-//            Reference,
-//            Difference
-//        >,
-//        boost::type_erasure::same_type<
-//            typename boost::type_erasure::iterator<
-//                Traversal,
-//                boost::type_erasure::_self,
-//                Reference,
-//                Difference
-//            >::value_type,
-//            std::remove_cv_t<Value>
-//        >,
-//        boost::type_erasure::relaxed,
-//        boost::type_erasure::typeid_<>
-//    >
-//>;
-//
-//}
-//
-//namespace br
-//{
-//
-//template<
-//    typename Value,
-//    typename Traversal,
-//    typename Reference = Value&,
-//    typename Difference = std::ptrdiff_t,
-//    typename Buffer = boost::iterators::use_default
-//>
-//using AnyIterator = typename boost::range_iterator<
-//    boost::any_range<
-//        Value,
-//        Traversal,
-//        Reference,
-//        Difference,
-//        Buffer
-//    >
-//>::type;
-//
-//}
-
-struct Presentation
+enum MouseButton
 {
-    int id;
-    std::string title;
-    std::string avatarSource;
-    std::string dirName;
-    std::vector<std::string> slidesFilePaths;
+#define X(name, value) name = value,
+    X(LeftButton, 1)   \
+    X(MiddleButton, 1 << 1) \
+    X(RightButton, 1 << 2) \
+    X(SideButton, 1 << 3)
+#undef X
 };
 
-namespace boost {
-namespace serialization {
-
-template<typename Archive>
-void serialize(Archive& ar, Presentation& p, const unsigned int version)
+bool isValid(MouseButton v)
 {
-    ar& p.id;
-    ar& p.title;
-    ar& p.avatarSource;
-    ar& p.dirName;
-    ar & p.slidesFilePaths;
+#define X(name, value) if(v == value) return true;
+    MOUSE_BUTTONS
+#undef X
+    return false;
 }
 
-} // namespace serialization
-} // namespace boost
+const char* toString(MouseButton v)
+{
+#define X(name, value) if(v == value) return #name;
+    MOUSE_BUTTONS
+#undef X
+    return nullptr;
+}
+
+bool fromString(const std::string& str, MouseButton& output)
+{
+#define X(name, value) if (str == #name){output = static_cast<MouseButton>(value); return true;}
+    MOUSE_BUTTONS
+#undef X
+    return false;
+}
+
+#undef MOUSE_BUTTONS
+
+template<typename Container, typename Iterator, typename Predicate>
+typename Container::size_type erase_if(
+    Container& container,
+    Iterator first,
+    Iterator last,
+    Predicate&& predicate = Predicate()
+)
+{
+    typename Container::size_type oldSize = container.size();
+    if constexpr (std::is_move_assignable_v<typename std::iterator_traits<Iterator>::reference>)
+    {
+        Iterator removedFirst = std::remove_if(first, last, std::forward<Predicate>(predicate));
+        container.erase(removedFirst, last);
+    }
+    else
+    {
+        //Use non const iterator if this assertion is not satisfied.(This ensures that use of this function is effective as possible.)
+        static_assert(!std::is_move_assignable_v<typename std::iterator_traits<typename Container::iterator>::reference>);
+        while (first != last)
+        {
+            if (std::invoke(predicate, *first))
+            {
+                first = container.erase(first);
+            }
+            else
+            {
+                ++first;
+            }
+        }
+    }
+    return oldSize - container.size();
+}
+
+template<typename Container, typename Predicate>
+typename Container::size_type erase_if(
+    Container& container,
+    Predicate&& predicate = Predicate()
+)
+{
+    return erase_if(container, std::begin(container), std::end(container), std::forward<Predicate>(predicate));
+}
+
+class Vector : public tc::container::SequenceContainerWrapper<Vector, std::vector<int>>
+{
+public:
+    using Vector::SequenceContainerWrapper::SequenceContainerWrapper;
+};
 
 int main()
 {
-    //std::ostream_iterator<int> ostreamIterator(std::cout, " ");
-    //ContainerAdaptor<std::vector<int>> adaptor({1, 2, 3, 4, 5});
-    //for (int i : adaptor) {
-    //    *ostreamIterator++ = i;
-    //}
-    //std::endl(std::cout);
+    Vector v({1, 2, 3, 4, 5});
+    Vector v2({6, 7, 8});
+    std::cout << (v == v2) << std::endl;
 
-    //int i[2] = {0, 1};
-    //using Mapping = boost::mpl::map<
-    //    boost::mpl::pair<bte::_a, int*>,
-    //    boost::mpl::pair<bte::_b, int>,
-    //    boost::mpl::pair<bte::_c, int>
-    //>;
-    //Any<bte::_a> a(i, bte::make_binding<Mapping>());
-    //Any<bte::_b> b(1, bte::make_binding<Mapping>());
-    //std::cout << *(a + b) << std::endl;
-
-    //AnyIterator<const int, boost::random_access_traversal_tag> first(adaptor.begin());
-    //decltype(first) last;
-    //last = decltype(first)(adaptor.end());
-    //std::for_each(first, last, [&ostreamIterator](std::iterator_traits<decltype(first)>::reference value) {
-    //    *ostreamIterator++ = value;
-    //});
-    //std::endl(std::cout);
-
-    //auto retrieved = boost::type_erasure::any_cast<boost::range_iterator<decltype(adaptor)>::type>(first);
-    //*ostreamIterator++ = *retrieved;
-    //std::endl(std::cout);
-
-    //std::set<int> s{1, 2, 3};
-    //std::cout << tc::contains(s, 1) << " " << tc::contains(adaptor, 10) << std::endl;
-
-    std::stringstream sstrm;
-    boost::archive::text_oarchive oa(sstrm);
-    Presentation p{1, "title", "avatarSource", "dirName", {"a", "b", "c"}};
-    oa << p;
-    std::cout << sstrm.tellg() << std::endl;
-    Presentation p2;
-    boost::archive::text_iarchive ia(sstrm);
-    ia >> p2;
-
-    sstrm.clear();
-    sstrm.seekg(0);
-    sstrm.seekp(0);
-    std::vector<Presentation> v(10);
-    oa << v;
-    std::vector<Presentation> v2;
-    ia >> v2;
-
-    struct A
+    bool _ = true;
+    if(auto _ = nullptr; _)
     {
-        A(int i) : i(i) {}
-        A(const A& other) {
-            i = other.i;
-            std::cout << "const A&" << std::endl;
-        }
-        A(A&& other) noexcept {
-            i = other.i;
-            std::cout << "A&&" << std::endl;
-        }
-
-        int i;
-    };
-
-    std::list<A> input({A(1), A(2), A(3), A(4), A(5)});
-    std::list<A> output;
-    std::move(tc::EraseIterator(input, std::begin(input)), tc::EraseIterator(input, std::end(input)), std::back_inserter(output));
-    //tc::container::ISequencedSet<tc::container::Orderable<int>>* s = nullptr;
+        std::cout << "false alarm" << std::endl;
+    }
+    else
+    {
+        std::cout << "as expected" << std::endl;
+    }
 
     return 0;
 }

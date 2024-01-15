@@ -4,11 +4,68 @@
 #include <type_traits>
 #include <functional>
 #include <cassert>
+#include <cstring>
 
 #include <boost/range.hpp>
 #include <boost/range/algorithm.hpp>
-
 #include <boost/system/system_error.hpp>
+#include <boost/preprocessor.hpp>
+
+#define DEFINE_ENUM_WITH_HELPER_FUNCTIONS_IS_VALID_CASE(r, data, elem)\
+    case elem : return true;
+
+#define DEFINE_ENUM_WITH_HELPER_FUNCTIONS_TOSTRING_CASE(r, data, elem)\
+    case elem : return BOOST_PP_STRINGIZE(elem);
+
+#define DEFINE_ENUM_WITH_HELPER_FUNCTIONS_FROMSTRING_CASE(r, data, elem)\
+    if (str == BOOST_PP_STRINGIZE(elem))\
+	{\
+		output = elem;\
+		return true;\
+	}
+
+#define DEFINE_ENUM_WITH_HELPER_FUNCTIONS(name, enumerators)\
+    enum name {\
+        BOOST_PP_SEQ_ENUM(enumerators)\
+    };\
+	\
+    inline bool fromString(const std::string& str, name& output)\
+    {\
+		BOOST_PP_SEQ_FOR_EACH(\
+            X_ENUM_WITH_STRING_CONVERSION_FROMSTRING_CASE,\
+            name,\
+            enumerators\
+        )\
+        return false;\
+    }\
+	\
+    inline const char* toString(name v)\
+    {\
+        switch (v)\
+        {\
+            BOOST_PP_SEQ_FOR_EACH(\
+                X_ENUM_WITH_STRING_CONVERSION_TOSTRING_CASE,\
+                name,\
+                enumerators\
+            )\
+            default:\
+                return nullptr;\
+        }\
+    }\
+    \
+	inline bool isValid(name v)\
+	{\
+		switch (v)\
+		{\
+			BOOST_PP_SEQ_FOR_EACH(\
+				X_ENUM_WITH_STRING_CONVERSION_TOSTRING_CASE,\
+				name,\
+				enumerators\
+			)\
+			default:\
+				return false;\
+		}\
+	}
 
 #define DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
 ClassName() = default;\
@@ -22,7 +79,9 @@ ClassName& operator=(ClassName&&) noexcept = default;
 #define INTERFACE(ClassName)\
 protected:\
 DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
-DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ClassName)
+DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ClassName)\
+public:\
+virtual ~ClassName() = default;
 
 namespace tc
 {
@@ -131,6 +190,9 @@ public:
 	std::reference_wrapper<Container> container;
 	iterator it;
 };
+
+template<typename Enum>
+using EnumHash = std::hash<std::underlying_type_t<Enum>>;
 
 } //tc
 

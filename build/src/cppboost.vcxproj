@@ -115,7 +115,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-gd-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-gd-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-gd-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-gd-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-gd-1_62.lib;C:\Boost\lib\libboost_regex-vc140-mt-gd-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-gd-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -159,7 +159,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-1_62.lib;C:\Boost\lib\libboost_regex-vc140-mt-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -203,7 +203,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-1_62.lib;C:\Boost\lib\libboost_regex-vc140-mt-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -246,7 +246,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Boost\lib\libboost_filesystem-vc140-mt-1_62.lib;C:\Boost\lib\libboost_serialization-vc140-mt-1_62.lib;C:\Boost\lib\libboost_regex-vc140-mt-1_62.lib;C:\Boost\lib\libboost_system-vc140-mt-1_62.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -337,6 +337,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <None Include="C:\Users\kochuev\Documents\cppboost\src\OrderableSequencedSet.ipp">
     </None>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AnyIterator.h" />
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Result.h" />
+    <None Include="C:\Users\kochuev\Documents\cppboost\src\Result.ipp">
+    </None>
+    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\Result.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\kochuev\Documents\cppboost\build\ZERO_CHECK.vcxproj">
