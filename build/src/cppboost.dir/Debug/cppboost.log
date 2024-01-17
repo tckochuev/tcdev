@@ -61,42 +61,43 @@ C:\Boost\boost/operators.hpp(865): message : see reference to class template ins
 C:\Boost\boost/operators.hpp(874,10): warning C4996: 'std::iterator<std::random_access_iterator_tag,V,D,P,R>': warning STL4015: The std::iterator class template (used as a base class to provide typedefs) is deprecated in C++17. (The <iterator> header is NOT deprecated.) The C++ Standard has never required user-defined iterators to derive from std::iterator. To fix this warning, stop deriving from std::iterator and start providing publicly accessible typedefs named iterator_category, value_type, difference_type, pointer, and reference. Note that value_type is required to be non-const, even for constant iterators. You can define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING or _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS to acknowledge that you have received this warning.
 C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Tools\MSVC\14.29.30133\include\xutility(5959,54): message : see declaration of 'std::iterator'
 C:\Boost\boost/operators.hpp(880): message : see reference to class template instantiation 'boost::operators_impl::random_access_iterator_helper<T,V,D,P,R>' being compiled
-C:\Users\kochuev\Documents\cppboost\src\main.cpp(158,29): error C2248: 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>::SequenceContainerWrapper': cannot access protected member declared in class 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>'
+C:\Users\kochuev\Documents\cppboost\src\Container.h(371,1): error C2635: cannot convert a 'tc::container::ContainerWrapper<Derived,SequenceContainer,ContainerTraits>*' to a 'Vector*'; conversion from a virtual base class is implied
           with
           [
+              Derived=Vector,
               SequenceContainer=std::vector<int,std::allocator<int>>,
-              _Ty=int,
-              ConstIterator=std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>
+              ContainerTraits=tc::container::DefaultContainerTraits<std::vector<int,std::allocator<int>>,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,int,const int &,const int &,__int64>
           ]
-C:\Users\kochuev\Documents\cppboost\src\Container.h(590): message : see declaration of 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>::SequenceContainerWrapper'
+C:\Users\kochuev\Documents\cppboost\src\Container.h(544): message : see declaration of 'tc::container::ContainerWrapper<Derived,SequenceContainer,ContainerTraits>'
           with
           [
+              Derived=Vector,
               SequenceContainer=std::vector<int,std::allocator<int>>,
-              _Ty=int,
-              ConstIterator=std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>
+              ContainerTraits=tc::container::DefaultContainerTraits<std::vector<int,std::allocator<int>>,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,int,const int &,const int &,__int64>
           ]
-C:\Users\kochuev\Documents\cppboost\src\main.cpp(140): message : see declaration of 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>'
+C:\Users\kochuev\Documents\cppboost\src\main.cpp(139): message : see declaration of 'Vector'
+C:\Users\kochuev\Documents\cppboost\src\Container.h(370): message : while compiling class template member function 'bool tc::container::ContainerWrapper<Derived,SequenceContainer,ContainerTraits>::equal(const Derived &) const'
           with
           [
+              Derived=Vector,
               SequenceContainer=std::vector<int,std::allocator<int>>,
-              _Ty=int,
-              ConstIterator=std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>
+              ContainerTraits=tc::container::DefaultContainerTraits<std::vector<int,std::allocator<int>>,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,int,const int &,const int &,__int64>
           ]
-C:\Users\kochuev\Documents\cppboost\src\main.cpp(159,24): error C2248: 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>::SequenceContainerWrapper': cannot access protected member declared in class 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>'
+C:\Users\kochuev\Documents\cppboost\src\Container.h(420): message : see reference to function template instantiation 'bool tc::container::ContainerWrapper<Derived,SequenceContainer,ContainerTraits>::equal(const Derived &) const' being compiled
           with
           [
+              Derived=Vector,
               SequenceContainer=std::vector<int,std::allocator<int>>,
-              _Ty=int,
-              ConstIterator=std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>
+              ContainerTraits=tc::container::DefaultContainerTraits<std::vector<int,std::allocator<int>>,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,int,const int &,const int &,__int64>
           ]
-C:\Users\kochuev\Documents\cppboost\src\Container.h(590): message : see declaration of 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>::SequenceContainerWrapper'
+C:\Users\kochuev\Documents\cppboost\src\Container.h(545): message : see reference to class template instantiation 'tc::container::ContainerWrapper<Derived,SequenceContainer,ContainerTraits>' being compiled
           with
           [
+              Derived=Vector,
               SequenceContainer=std::vector<int,std::allocator<int>>,
-              _Ty=int,
-              ConstIterator=std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>
+              ContainerTraits=tc::container::DefaultContainerTraits<std::vector<int,std::allocator<int>>,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<int>>>,int,const int &,const int &,__int64>
           ]
-C:\Users\kochuev\Documents\cppboost\src\main.cpp(140): message : see declaration of 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>'
+C:\Users\kochuev\Documents\cppboost\src\main.cpp(140): message : see reference to class template instantiation 'tc::container::SequenceContainerWrapper<Vector,std::vector<int,std::allocator<int>>,tc::container::DefaultContainerTraits<SequenceContainer,unsigned __int64,std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,ConstIterator,int,const int &,const int &,__int64>>' being compiled
           with
           [
               SequenceContainer=std::vector<int,std::allocator<int>>,

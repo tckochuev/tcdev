@@ -453,7 +453,7 @@ template<
 	typename ReversibleContainerTraits = DefaultReversibleContainerTraits<ReversibleContainer>
 >
 class ReversibleContainerWrapper :
-	public virtual ContainerWrapper<
+	public ContainerWrapper<
 		Derived,
 		ReversibleContainer,
 		ReversibleContainerTraits
@@ -486,12 +486,8 @@ protected:
 	using ReversibleContainerWrapper::ContainerWrapper::m_container;
 
 	using ReversibleContainerWrapper::ContainerWrapper::ContainerWrapper;
-	//DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ReversibleContainerWrapper)
+	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ReversibleContainerWrapper)
 	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ReversibleContainerWrapper)
-	//template<typename... Args>
-	//ReversibleContainerWrapper(Args&&... args) :
-	//	ReversibleContainerWrapper::ContainerWrapper(std::forward<Args>(args)...)
-	//{}
 
 	reverse_iterator doRBegin() {
 		return m_container.rbegin();
@@ -517,7 +513,7 @@ public:
 	{}
 
 private:
-	SameValueIterator::reference dereference() const {
+	typename SameValueIterator::reference dereference() const {
 		return value;
 	}
 	bool equal(const SameValueIterator& other) const {
@@ -529,10 +525,10 @@ private:
 	void decrement() {
 		--state;
 	}
-	void advance(SameValueIterator::difference_type n) {
+	void advance(typename SameValueIterator::difference_type n) {
 		state += n;
 	}
-	SameValueIterator::difference_type distance_to(const SameValueIterator& other) {
+	typename SameValueIterator::difference_type distance_to(const SameValueIterator& other) {
 		return other.state - state;
 	}
 
@@ -542,26 +538,29 @@ private:
 	friend class boost::iterator_core_access;
 };
 
-template<typename Value, typename Size>
-auto rangeOfValue(Size n, Value v)
-{
-	tc::NOP<Value> f{std::move(v)};
-	boost::function_input_iterator first(f, 0), last(std::move(f), n);
-	return std::pair(first, last);
-}
-
 template<
 	typename Derived,
 	typename SequenceContainer,
 	typename ContainerTraits = DefaultContainerTraits<SequenceContainer>
 >
-class SequenceContainerWrapper : public virtual ContainerWrapper<Derived, SequenceContainer, ContainerTraits>
+class SequenceContainerWrapper : public ContainerWrapper<Derived, SequenceContainer, ContainerTraits>
 {
 public:
 	using value_type = typename SequenceContainerWrapper::value_type;
 	using iterator = typename SequenceContainerWrapper::iterator;
 	using const_iterator = typename SequenceContainerWrapper::const_iterator;
 	using size_type = typename SequenceContainerWrapper::size_type;
+
+	SequenceContainerWrapper(size_type n, const value_type& v) :
+		SequenceContainerWrapper::ContainerWrapper(n, v)
+	{}
+	template<typename InputIterator>
+	SequenceContainerWrapper(InputIterator first, InputIterator last) :
+		SequenceContainerWrapper::ContainerWrapper(first, last)
+	{}
+	SequenceContainerWrapper(std::initializer_list<value_type> il) :
+		SequenceContainerWrapper::ContainerWrapper(il)
+	{}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
 		assign(il);
@@ -574,10 +573,6 @@ public:
 	template<typename InputIterator>
 	iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
 		return static_cast<Derived*>(this)->doInsert(pos, first, last);
-	}
-	template<typename InputIterator>
-	iterator insert(const_iterator pos, size_type n, InputIterator first, InputIterator last) {
-		return static_cast<Derived*>(this)->doInsert(pos, n, first, last);
 	}
 	iterator insert(const_iterator pos, const value_type& v) {
 		return static_cast<Derived*>(this)->doInsert(pos, v);
@@ -605,10 +600,6 @@ public:
 	void assign(InputIterator first, InputIterator last) {
 		static_cast<Derived*>(this)->doAssign(first, last);
 	}
-	template<typename InputIterator>
-	void assign(size_type n, InputIterator first, InputIterator last) {
-		static_cast<Derived*>(this)->doAssign(n, first, last)
-	}
 	void assign(std::initializer_list<value_type> il) {
 		static_cast<Derived*>(this)->doAssign(il);
 	}
@@ -620,35 +611,30 @@ protected:
 	using SequenceContainerWrapper::ContainerWrapper::m_container;
 
 	using SequenceContainerWrapper::ContainerWrapper::ContainerWrapper;
+	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(SequenceContainerWrapper)
 	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(SequenceContainerWrapper)
 
 	template<typename... Args>
 	iterator doEmplace(const_iterator pos, Args&&... args) {
 		//same as insert by default.
-		value_type v(std::forward<Args>(args)...);
-		return insert(pos, std::move(v));
+		return insert(pos, value_type(std::forward<Args>(args)...));
 	}
 	template<typename InputIterator>
 	iterator doInsert(const_iterator pos, InputIterator first, InputIterator last) {
 		return m_container.insert(pos, first, last);
 	}
-	template<typename InputIterator>
-	iterator doInsert(const iterator pos, size_type n, InputIterator first, InputIterator last) {
-		//forward to insert(pos, first, last) by default.
-		return insert(pos, first, last);
-	}
 	iterator doInsert(const_iterator pos, const value_type& v) {
-		return insert(pos, 1, &v, std::next(&v));
+		return insert(pos, &v, std::next(&v));
 	}
 	iterator doInsert(const_iterator pos, value_type&& v) {
-		return insert(pos, 1, std::move_iterator(&v), std::move_iterator(std::next(&v)));
+		return insert(pos, std::move_iterator(&v), std::move_iterator(std::next(&v)));
 	}
 	iterator doInsert(const_iterator pos, size_type n, const value_type& v) {
-		auto [first, last] = rangeOfValue(n, std::cref(v));
-		return insert(pos, n, first, last);
+		auto [first, last] = makeValueIteratorRange(n, v);
+		return insert(pos, first, last);
 	}
 	iterator doInsert(const_iterator pos, std::initializer_list<value_type> il) {
-		return insert(pos, il.size(), il.begin(), il.end());
+		return insert(pos, il.begin(), il.end());
 	}
 	iterator doErase(const_iterator pos) {
 		assert(pos != this->end());
@@ -664,19 +650,20 @@ protected:
 	void doAssign(InputIterator first, InputIterator last) {
 		m_container.assign(first, last);
 	}
-	template<typename InputIterator>
-	void doAssign(size_type n, InputIterator first, InputIterator last) {
-		//forward to assign(first, last) by default.
-		assign(first, last);
-	}
 	void doAssign(std::initializer_list<value_type> il) {
 		assign(il.begin(), il.end());
 	}
 	void doAssign(size_type n, const value_type& v) {
+		auto [first, last] = makeValueIteratorRange(n, v);
+		assign(first, last);
+	}
+
+private:
+	auto makeValueIteratorRange(size_type n, const value_type& v) {
 		SameValueIterator<const std::reference_wrapper<const value_type>>
 		first(std::cref(v), 0), last(std::cref(v), static_cast<ptrdiff_t>(n));
 		static_assert(std::is_base_of_v<std::random_access_iterator_tag, std::iterator_traits<decltype(first)>::iterator_category>);
-		assign(first, last);
+		return std::pair(first, last);
 	}
 };
 
