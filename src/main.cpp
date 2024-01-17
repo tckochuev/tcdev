@@ -141,6 +141,16 @@ class Vector : public tc::container::SequenceContainerWrapper<Vector, std::vecto
 {
 public:
     using Vector::SequenceContainerWrapper::SequenceContainerWrapper;
+
+    /*signal*/ void inserted(size_type n, const_iterator pos) {
+        std::cout << n << " elements were inserted" << std::endl;
+    }
+    /*signal*/ void erased(size_type n, const_iterator pos) {
+        std::cout << n << " elements were erased" << std::endl;
+    }
+    /*signal*/ void assigned(size_type n) {
+        std::cout << n << " elements were assigned" << std::endl;
+    }
 };
 
 int main()

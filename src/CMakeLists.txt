@@ -10,10 +10,8 @@ add_executable(
     main.cpp
     NS.h
     Error.h
-    VSIImageRange.h
-    VSIImageRange.ipp
-    VSImageProviderRange.h
-    VSImageProviderRange.ipp
+    Error.ipp
+    Error.cpp
     Utils.h
     AbstractWindowPositioner.h
     AbstractWindowPositioner.cpp
@@ -23,9 +21,7 @@ add_executable(
     OrderableSequencedSet.h
     OrderableSequencedSet.ipp
     AnyIterator.h
-    Result.h
-    Result.ipp
-    Result.cpp
+    IExporterAsImages.h
 )
 
 target_include_directories(

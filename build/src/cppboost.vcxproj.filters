@@ -4,10 +4,10 @@
     <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\AbstractWindowPositioner.cpp">
+    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\Error.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\Result.cpp">
+    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\AbstractWindowPositioner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -16,12 +16,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Error.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSIImageRange.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSImageProviderRange.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Utils.h">
@@ -42,7 +36,7 @@
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AnyIterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Result.h">
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\IExporterAsImages.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,11 +44,9 @@
     <CustomBuild Include="C:\Users\kochuev\Documents\cppboost\src\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="C:\Users\kochuev\Documents\cppboost\src\VSIImageRange.ipp" />
-    <None Include="C:\Users\kochuev\Documents\cppboost\src\VSImageProviderRange.ipp" />
+    <None Include="C:\Users\kochuev\Documents\cppboost\src\Error.ipp" />
     <None Include="C:\Users\kochuev\Documents\cppboost\src\SequencedSet.ipp" />
     <None Include="C:\Users\kochuev\Documents\cppboost\src\OrderableSequencedSet.ipp" />
-    <None Include="C:\Users\kochuev\Documents\cppboost\src\Result.ipp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

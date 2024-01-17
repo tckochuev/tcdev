@@ -194,6 +194,26 @@ public:
 template<typename Enum>
 using EnumHash = std::hash<std::underlying_type_t<Enum>>;
 
+template<typename R, typename... Args>
+struct NOP
+{
+	using result_type = R; //for boost Generator concept conformance.
+	R operator()(Args... args) const {
+		return returns;
+	}
+
+	R returns;
+};
+
+template<typename... Args>
+struct NOP<void, Args...>
+{
+	using result_type = void; //for boost Generator concept conformance.
+	void operator()(Args... args) const {
+		return;
+	}
+};
+
 } //tc
 
 #endif

@@ -320,12 +320,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\main.cpp" />
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\NS.h" />
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Error.h" />
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSIImageRange.h" />
-    <None Include="C:\Users\kochuev\Documents\cppboost\src\VSIImageRange.ipp">
+    <None Include="C:\Users\kochuev\Documents\cppboost\src\Error.ipp">
     </None>
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\VSImageProviderRange.h" />
-    <None Include="C:\Users\kochuev\Documents\cppboost\src\VSImageProviderRange.ipp">
-    </None>
+    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\Error.cpp" />
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Utils.h" />
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AbstractWindowPositioner.h" />
     <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\AbstractWindowPositioner.cpp" />
@@ -337,10 +334,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <None Include="C:\Users\kochuev\Documents\cppboost\src\OrderableSequencedSet.ipp">
     </None>
     <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\AnyIterator.h" />
-    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\Result.h" />
-    <None Include="C:\Users\kochuev\Documents\cppboost\src\Result.ipp">
-    </None>
-    <ClCompile Include="C:\Users\kochuev\Documents\cppboost\src\Result.cpp" />
+    <ClInclude Include="C:\Users\kochuev\Documents\cppboost\src\IExporterAsImages.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\kochuev\Documents\cppboost\build\ZERO_CHECK.vcxproj">
