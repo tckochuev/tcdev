@@ -33,6 +33,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/unordered_map.hpp>
 
+#include <boost/signals2.hpp>
+
 #include "Container.h"
 
 //template<typename ContainerT>
@@ -136,37 +138,100 @@ typename Container::size_type erase_if(
     return erase_if(container, std::begin(container), std::end(container), std::forward<Predicate>(predicate));
 }
 
-class Vector : public tc::container::SequenceContainerWrapper<Vector, std::vector<int>>
+class ObservableVector :
+    public tc::container::SequenceContainerWrapper<
+        tc::container::ReversibleContainerWrapper<ObservableVector, std::vector<int>>
+    >
 {
 public:
-    using Vector::SequenceContainerWrapper::SequenceContainerWrapper;
+    using ObservableVector::SequenceContainerWrapper::SequenceContainerWrapper;
+    ObservableVector(const ObservableVector&) = delete;
+    ObservableVector(ObservableVector&&) = delete;
+    ObservableVector& operator=(const ObservableVector&) = delete;
+    ObservableVector& operator=(ObservableVector&&) = delete;
 
-    /*signal*/ void inserted(size_type n, const_iterator pos) {
-        std::cout << n << " elements were inserted" << std::endl;
+    boost::signals2::signal<void(size_type, const_iterator)> inserted;
+    boost::signals2::signal<void(const_iterator, const_iterator)> aboutToBeErased;
+    boost::signals2::signal<void(size_type, const_iterator)> erased;
+    boost::signals2::signal<void()> reassigned;
+
+protected:
+    void doSwap(ObservableVector& other) {
+        assert("not swappable");
     }
-    /*signal*/ void erased(size_type n, const_iterator pos) {
-        std::cout << n << " elements were erased" << std::endl;
+    template<typename InputIterator>
+    iterator doInsert(const_iterator pos, InputIterator first, InputIterator last) {
+        size_type oldSize = size();
+        auto next = SequenceContainerWrapper::doInsert(pos, first, last);
+        inserted(size() - oldSize, next);
+        return next;
     }
-    /*signal*/ void assigned(size_type n) {
-        std::cout << n << " elements were assigned" << std::endl;
+    iterator doErase(const_iterator first, const_iterator last) {
+        aboutToBeErased(first, last);
+        size_type oldSize = size();
+        auto r = SequenceContainerWrapper::doErase(first, last);
+        erased(oldSize - size(), r);
+        return r;
+    }
+    void doClear() {
+        if(size_type oldSize = size())
+        {
+            aboutToBeErased(begin(), end());
+            SequenceContainerWrapper::doClear();
+            erased(oldSize - size(), end());
+        }
+    }
+    template<typename InputIterator>
+    void doAssign(InputIterator first, InputIterator last) {
+        SequenceContainerWrapper::doAssign(first, last);
+        reassigned();
     }
 };
 
 int main()
 {
-    Vector v({1, 2, 3, 4, 5});
-    Vector v2({6, 7, 8});
-    std::cout << (v == v2) << std::endl;
+    auto print = [](auto&& range) {
+        for(const auto& e : range) {
+            std::cout << e << " ";
+        }
+    };
 
-    bool _ = true;
-    if(auto _ = nullptr; _)
+    ObservableVector v;
+    v.aboutToBeErased.connect([&](ObservableVector::const_iterator first, ObservableVector::const_iterator last) {
+        auto firstIdx = std::distance(v.begin(), first), lastIdx = std::distance(v.begin(), last);
+        std::cout << "about to be erased [" << firstIdx << "," << lastIdx << "]" << std::endl;
+    });
+    v.erased.connect([&](ObservableVector::size_type n, ObservableVector::const_iterator pos) {
+        auto idx = std::distance(v.begin(), pos);
+        std::cout << "erased " << n << " elements before index " << idx << " --> ";
+        print(v);
+        std::endl(std::cout);
+    });
+    v.inserted.connect([&](auto n, auto pos) {
+        auto idx = std::distance(v.begin(), pos);
+        std::cout << "inserted " << n << " elements before index " << idx << " --> ";
+        print(v);
+        std::endl(std::cout);
+    });
+    v.reassigned.connect([&]() {
+        std::cout << "reassigned " << v.size() << " elements --> ";
+        print(v);
+        std::endl(std::cout);
+    });
+
+    v.assign({1, 2, 3, 4, 5, 6, 7, 8});
+    auto it = v.begin();
+    while(it != v.end())
     {
-        std::cout << "false alarm" << std::endl;
+        if(*it % 2 == 0)
+        {
+            it = v.erase(it);
+        }
+        else ++it;
     }
-    else
-    {
-        std::cout << "as expected" << std::endl;
-    }
+    v.insert(v.end(), {1, 2, 3});
+    v.clear();
+
 
     return 0;
 }

@@ -67,10 +67,13 @@
 		}\
 	}
 
-#define DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
-ClassName() = default;\
+#define DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
 ClassName(const ClassName&) = default;\
 ClassName(ClassName&&) noexcept = default;
+
+#define DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
+ClassName() = default;\
+DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)
 
 #define DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ClassName)\
 ClassName& operator=(const ClassName&) = default;\

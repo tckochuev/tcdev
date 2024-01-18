@@ -318,16 +318,21 @@ template<
 	typename Difference = typename std::iterator_traits<Iterator>::difference_type
 >
 struct DefaultReversibleContainerTraits :
-	ReversibleContainerTraits<Size, ConstIterator, Iterator, Value, Reference, ConstReference, Difference>
+	ReversibleContainerTraits<Size, ConstIterator, ConstReverseIterator, Iterator, ReverseIterator, Value, Reference, ConstReference, Difference>
 {};
 
+
 template<
-	typename Derived,
-	typename Container,
-	typename ContainerTraits = DefaultContainerTraits<Container>
+	typename TDerived,
+	typename TContainer,
+	typename TContainerTraits = DefaultContainerTraits<TContainer>
 >
 class ContainerWrapper
 {
+protected:
+	using Derived = TDerived;
+	using Container = TContainer;
+	using ContainerTraits = TContainerTraits;
 public:
 	using value_type = typename ContainerTraits::value_type;
 	using reference = typename ContainerTraits::reference;
@@ -338,37 +343,34 @@ public:
 	using size_type = typename ContainerTraits::size_type;
 
 	iterator begin() {
-		return static_cast<Derived*>(this)->doBegin();
+		return Accessor::begin(derived());
 	}
 	const_iterator begin() const {
-		return static_cast<const Derived*>(this)->doBegin();
+		return Accessor::begin(derived());
 	}
 	const_iterator cbegin() const {
 		return begin();
 	}
 	iterator end() {
-		return static_cast<Derived*>(this)->doEnd();
+		return Accessor::end(derived());
 	}
 	const_iterator end() const {
-		return static_cast<const Derived*>(this)->doEnd();
+		return Accessor::end(derived());
 	}
 	const_iterator cend() const {
 		return end();
 	}
 	size_type max_size() const {
-		return static_cast<const Derived*>(this)->doMaxSize();
+		return Accessor::max_size(derived());
 	}
 	size_type size() const {
-		return static_cast<const Derived*>(this)->doSize();
+		return Accessor::size(derived());
 	}
 	bool empty() const {
-		return static_cast<const Derived*>(this)->doEmpty();
+		return Accessor::empty(derived());
 	}
 	void swap(Derived& other) {
-		return static_cast<Derived*>(this)->doSwap(other);
-	}
-	bool equal(const Derived& other) const {
-		return static_cast<const Derived*>(this)->doEqual(other);
+		return Accessor::swap(derived(), other);
 	}
 
 protected:
@@ -380,13 +382,13 @@ protected:
 	iterator doBegin() {
 		return m_container.begin();
 	}
-	const_iterator doBegin() const {
+	const_iterator doBeginConst() const {
 		return m_container.begin();
 	}
 	iterator doEnd() {
 		return m_container.end();
 	}
-	const_iterator doEnd() const {
+	const_iterator doEndConst() const {
 		return m_container.end();
 	}
 	size_type doMaxSize() const {
@@ -404,8 +406,46 @@ protected:
 	bool doEqual(const Derived& other) const {
 		return m_container == static_cast<const ContainerWrapper&>(other).m_container;
 	}
+	Derived& derived() {
+		return static_cast<Derived&>(*this);
+	}
+	const Derived& derived() const{
+		return static_cast<const Derived&>(*this);
+	}
 
 	Container m_container;
+private:
+	struct Accessor : Derived
+	{
+		static iterator begin(Derived& d) {
+			return (d.*&Accessor::doBegin)();
+		}
+		static const_iterator begin(const Derived& d) {
+			return (d.*&Accessor::doBeginConst)();
+		}
+		static iterator end(Derived& d) {
+			return (d.*&Accessor::doEnd)();
+		}
+		static const_iterator end(const Derived& d) {
+			return (d.*&Accessor::doEndConst)();
+		}
+		static size_type max_size(const Derived& d) {
+			return (d.*&Accessor::doMaxSize)();
+		}
+		static size_type size(const Derived& d) {
+			return (d.*&Accessor::doSize)();
+		}
+		static bool empty(const Derived& d) {
+			return (d.*&Accessor::doEmpty)();
+		}
+		static void swap(Derived& d, Derived& other) {
+			return (d.*&Accessor::doSwap)(other);
+		}
+		static bool equal(const Derived& d, const Derived& other) {
+			return (d.*&Accessor::doEqual)(other);
+		}
+	};
+	friend bool operator==(const ContainerWrapper&, const ContainerWrapper&);
 };
 
 template<
@@ -418,7 +458,7 @@ bool operator==(
 	const ContainerWrapper<D, C, CT>& rhs
 )
 {
-	return lhs.equal(static_cast<const D&>(rhs));
+	return ContainerWrapper<D, C, CT>::Accessor::equal(lhs.derived(), rhs.derived());
 }
 
 template<
@@ -464,19 +504,19 @@ public:
 	using const_reverse_iterator = typename ReversibleContainerTraits::const_reverse_iterator;
 
 	reverse_iterator rbegin() {
-		return static_cast<Derived*>(this)->doRBegin();
+		return Accessor::rbegin(derived());
 	}
 	const_reverse_iterator rbegin() const {
-		return static_cast<const Derived*>(this)->doRBegin();
+		return Accessor::rbegin(derived());
 	}
 	const_reverse_iterator crbegin() const {
 		return rbegin();
 	}
 	reverse_iterator rend() {
-		return static_cast<Derived*>(this)->doREnd();
+		return Accessor::rend(derived());
 	}
 	const_reverse_iterator rend() const {
-		return static_cast<const Derived*>(this)->doREnd();
+		return Accessor::rend(derived());
 	}
 	const_reverse_iterator crend() const {
 		return rend();
@@ -484,6 +524,7 @@ public:
 
 protected:
 	using ReversibleContainerWrapper::ContainerWrapper::m_container;
+	using ReversibleContainerWrapper::ContainerWrapper::derived;
 
 	using ReversibleContainerWrapper::ContainerWrapper::ContainerWrapper;
 	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ReversibleContainerWrapper)
@@ -492,15 +533,32 @@ protected:
 	reverse_iterator doRBegin() {
 		return m_container.rbegin();
 	};
-	const_reverse_iterator doRBegin() const {
+	const_reverse_iterator doRBeginConst() const {
 		return m_container.rbegin();
 	}
 	reverse_iterator doREnd() {
 		return m_container.rend();
 	}
-	const_reverse_iterator doREnd() const {
+	const_reverse_iterator doREndConst() const {
 		return m_container.rend();
 	}
+
+private:
+	struct Accessor : Derived
+	{
+		static reverse_iterator rbegin(Derived& d) {
+			return (d.*&Accessor::doRBegin)();
+		}
+		static const_reverse_iterator rbegin(const Derived& d) {
+			return (d.*&Accessor::doRBeginConst)();
+		}
+		static reverse_iterator rend(Derived& d) {
+			return (d.*&Accessor::doREnd)();
+		}
+		static const_reverse_iterator rend(const Derived& d) {
+			return (d.*&Accessor::doREndConst)();
+		}
+	};
 };
 
 template<typename Value, typename State = ptrdiff_t>
@@ -538,28 +596,28 @@ private:
 	friend class boost::iterator_core_access;
 };
 
-template<
-	typename Derived,
-	typename SequenceContainer,
-	typename ContainerTraits = DefaultContainerTraits<SequenceContainer>
->
-class SequenceContainerWrapper : public ContainerWrapper<Derived, SequenceContainer, ContainerTraits>
+/**@tparam Base ReversibleContainerWrapper or ContainerWrapper*/
+template<typename Base>
+class SequenceContainerWrapper : public Base
 {
+protected:
+	using Derived = typename Base::Derived;
 public:
 	using value_type = typename SequenceContainerWrapper::value_type;
 	using iterator = typename SequenceContainerWrapper::iterator;
 	using const_iterator = typename SequenceContainerWrapper::const_iterator;
 	using size_type = typename SequenceContainerWrapper::size_type;
 
+	SequenceContainerWrapper() = default;
 	SequenceContainerWrapper(size_type n, const value_type& v) :
-		SequenceContainerWrapper::ContainerWrapper(n, v)
+		Base(n, v)
 	{}
 	template<typename InputIterator>
 	SequenceContainerWrapper(InputIterator first, InputIterator last) :
-		SequenceContainerWrapper::ContainerWrapper(first, last)
+		Base(first, last)
 	{}
 	SequenceContainerWrapper(std::initializer_list<value_type> il) :
-		SequenceContainerWrapper::ContainerWrapper(il)
+		Base(il)
 	{}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
@@ -568,50 +626,50 @@ public:
 	}
 	template<typename... Args>
 	iterator emplace(const_iterator pos, Args&&... args) {
-		return static_cast<Derived*>(this)->doEmplace(pos, std::forward<Args>(args)...);
+		return Accessor::emplace(derived(), pos, std::forward<Args>(args)...);
 	}
 	template<typename InputIterator>
 	iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
-		return static_cast<Derived*>(this)->doInsert(pos, first, last);
+		return Accessor::insert(derived(), pos, first, last);
 	}
 	iterator insert(const_iterator pos, const value_type& v) {
-		return static_cast<Derived*>(this)->doInsert(pos, v);
+		return Accessor::insert(derived(), pos, v);
 	}
 	iterator insert(const_iterator pos, value_type&& v) {
-		return static_cast<Derived*>(this)->doInsert(pos, std::move(v));
+		return Accessor::insert(derived(), pos, std::move(v));
 	}
 	iterator insert(const_iterator pos, size_type n, const value_type& v) {
-		return static_cast<Derived*>(this)->doInsert(pos, n, v);
+		return Accessor::insert(derived(), pos, n, v);
 	}
 	iterator insert(const_iterator pos, std::initializer_list<value_type> il) {
-		return static_cast<Derived*>(this)->doInsert(pos, il);
+		return Accessor::insert(derived(), pos, il);
 	}
 	iterator erase(const_iterator pos) {
-		return static_cast<Derived*>(this)->doErase(pos);
+		return Accessor::erase(derived(), pos);
 	}
 	iterator erase(const_iterator first, const_iterator last) {
-		return static_cast<Derived*>(this)->doErase(first, last);
+		return Accessor::erase(derived(), first, last);
 	}
 	void clear() {
-		static_cast<Derived*>(this)->doClear();
-		assert(SequenceContainerWrapper::empty());
+		Accessor::clear(derived());
 	}
 	template<typename InputIterator>
 	void assign(InputIterator first, InputIterator last) {
-		static_cast<Derived*>(this)->doAssign(first, last);
+		Accessor::assign(derived(), first, last);
 	}
 	void assign(std::initializer_list<value_type> il) {
-		static_cast<Derived*>(this)->doAssign(il);
+		Accessor::assign(derived(), il);
 	}
 	void assign(size_type n, const value_type& v) {
-		static_cast<Derived*>(this)->doAssign(n, v);
+		Accessor::assign(derived(), n, v);
 	}
 
 protected:
-	using SequenceContainerWrapper::ContainerWrapper::m_container;
+	using Base::m_container;
+	using Base::derived;
 
-	using SequenceContainerWrapper::ContainerWrapper::ContainerWrapper;
-	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(SequenceContainerWrapper)
+	using Base::Base;
+	DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(SequenceContainerWrapper)
 	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(SequenceContainerWrapper)
 
 	template<typename... Args>
@@ -623,20 +681,20 @@ protected:
 	iterator doInsert(const_iterator pos, InputIterator first, InputIterator last) {
 		return m_container.insert(pos, first, last);
 	}
-	iterator doInsert(const_iterator pos, const value_type& v) {
+	iterator doInsertOne(const_iterator pos, const value_type& v) {
 		return insert(pos, &v, std::next(&v));
 	}
-	iterator doInsert(const_iterator pos, value_type&& v) {
+	iterator doInsertOneRV(const_iterator pos, value_type&& v) {
 		return insert(pos, std::move_iterator(&v), std::move_iterator(std::next(&v)));
 	}
-	iterator doInsert(const_iterator pos, size_type n, const value_type& v) {
+	iterator doInsertN(const_iterator pos, size_type n, const value_type& v) {
 		auto [first, last] = makeValueIteratorRange(n, v);
 		return insert(pos, first, last);
 	}
-	iterator doInsert(const_iterator pos, std::initializer_list<value_type> il) {
+	iterator doInsertIL(const_iterator pos, std::initializer_list<value_type> il) {
 		return insert(pos, il.begin(), il.end());
 	}
-	iterator doErase(const_iterator pos) {
+	iterator doEraseOne(const_iterator pos) {
 		assert(pos != this->end());
 		return erase(pos, std::next(pos));
 	}
@@ -650,15 +708,62 @@ protected:
 	void doAssign(InputIterator first, InputIterator last) {
 		m_container.assign(first, last);
 	}
-	void doAssign(std::initializer_list<value_type> il) {
+	void doAssignIL(std::initializer_list<value_type> il) {
 		assign(il.begin(), il.end());
 	}
-	void doAssign(size_type n, const value_type& v) {
+	void doAssignN(size_type n, const value_type& v) {
 		auto [first, last] = makeValueIteratorRange(n, v);
 		assign(first, last);
 	}
 
 private:
+	struct Accessor : Derived
+	{
+		template<typename... Args>
+		static iterator emplace(Derived& d, const_iterator pos, Args&&... args) {
+			auto memfn = &Accessor::doEmplace<Args...>;
+			return (d.*memfn)(pos, std::forward<Args>(args)...);
+		}
+		template<typename InputIterator>
+		static iterator insert(Derived& d, const_iterator pos, InputIterator first, InputIterator last) {
+			auto memfn = &Accessor::doInsert<InputIterator>;
+			return (d.*memfn)(pos, first, last);
+		}
+		static iterator insert(Derived& d, const_iterator pos, const value_type& v) {
+			return (d.*&Accessor::doInsertOne)(pos, v);
+		}
+		static iterator insert(Derived& d, const_iterator pos, value_type&& v) {
+			return (d.*&Accessor::doInsertOneRV)(pos, std::move(v));
+		}
+		static iterator insert(Derived& d, const_iterator pos, size_type n, const value_type& v) {
+			return (d.*&Accessor::doInsertN)(pos, n, v);
+		}
+		static iterator insert(Derived& d, const_iterator pos, std::initializer_list<value_type> il) {
+			return (d.*&Accessor::doInsertIL)(pos, il);
+		}
+		static iterator erase(Derived& d, const_iterator pos) {
+			return (d.*&Accessor::doEraseOne)(pos);
+		}
+		static iterator erase(Derived& d, const_iterator first, const_iterator last) {
+			return (d.*&Accessor::doErase)(first, last);
+		}
+		static void clear(Derived& d) {
+			(d.*&Accessor::doClear)();
+			assert(d.empty());
+		}
+		template<typename InputIterator>
+		static void assign(Derived& d, InputIterator first, InputIterator last) {
+			auto memfn = &Accessor::doAssign<InputIterator>;
+			(d.*memfn)(first, last);
+		}
+		static void assign(Derived& d, std::initializer_list<value_type> il) {
+			(d.*&Accessor::doAssignIL)(il);
+		}
+		static void assign(Derived& d, size_type n, const value_type& v) {
+			(d.*&Accessor::doAssignN)(n, v);
+		}
+	};
+
 	auto makeValueIteratorRange(size_type n, const value_type& v) {
 		SameValueIterator<const std::reference_wrapper<const value_type>>
 		first(std::cref(v), 0), last(std::cref(v), static_cast<ptrdiff_t>(n));
