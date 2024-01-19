@@ -7,7 +7,7 @@
 #include <iterator>
 
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/iterator/function_input_iterator.hpp>
+#include <boost/function_output_iterator.hpp>
 
 #include "Utils.h"
 
@@ -327,20 +327,15 @@ template<
 	typename TContainer,
 	typename TContainerTraits = DefaultContainerTraits<TContainer>
 >
-class ContainerWrapper
+class ContainerWrapper : public TContainerTraits
 {
-protected:
+public:
 	using Derived = TDerived;
 	using Container = TContainer;
 	using ContainerTraits = TContainerTraits;
-public:
-	using value_type = typename ContainerTraits::value_type;
-	using reference = typename ContainerTraits::reference;
-	using const_reference = typename ContainerTraits::const_reference;
-	using iterator = typename ContainerTraits::iterator;
-	using const_iterator = typename ContainerTraits::const_iterator;
-	using difference_type = typename ContainerTraits::difference_type;
-	using size_type = typename ContainerTraits::size_type;
+	using iterator = typename ContainerWrapper::iterator;
+	using const_iterator = typename ContainerWrapper::const_iterator;
+	using size_type = typename ContainerWrapper::size_type;
 
 	iterator begin() {
 		return Accessor::begin(derived());
@@ -586,7 +581,7 @@ private:
 	void advance(typename SameValueIterator::difference_type n) {
 		state += n;
 	}
-	typename SameValueIterator::difference_type distance_to(const SameValueIterator& other) {
+	typename SameValueIterator::difference_type distance_to(const SameValueIterator& other) const {
 		return other.state - state;
 	}
 
@@ -600,29 +595,31 @@ private:
 template<typename Base>
 class SequenceContainerWrapper : public Base
 {
-protected:
-	using Derived = typename Base::Derived;
 public:
+	using Derived = typename Base::Derived;
 	using value_type = typename SequenceContainerWrapper::value_type;
 	using iterator = typename SequenceContainerWrapper::iterator;
 	using const_iterator = typename SequenceContainerWrapper::const_iterator;
 	using size_type = typename SequenceContainerWrapper::size_type;
 
-	SequenceContainerWrapper() = default;
+	SequenceContainerWrapper() : SequenceContainerWrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr)) {}
 	SequenceContainerWrapper(size_type n, const value_type& v) :
-		Base(n, v)
+		SequenceContainerWrapper(
+			SameValueIterator<const std::reference_wrapper<const value_type>>(v, 0),
+			SameValueIterator<const std::reference_wrapper<const value_type>>(v, n)
+		)
 	{}
 	template<typename InputIterator>
 	SequenceContainerWrapper(InputIterator first, InputIterator last) :
 		Base(first, last)
 	{}
 	SequenceContainerWrapper(std::initializer_list<value_type> il) :
-		Base(il)
+		SequenceContainerWrapper(il.begin(), il.end())
 	{}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
 		assign(il);
-		return static_cast<Derived&>(*this);
+		return derived();
 	}
 	template<typename... Args>
 	iterator emplace(const_iterator pos, Args&&... args) {
@@ -702,11 +699,13 @@ protected:
 		return m_container.erase(first, last);
 	}
 	void doClear() {
-		m_container.clear();
+		erase(begin(), end());
+		assert(empty());
 	}
 	template<typename InputIterator>
 	void doAssign(InputIterator first, InputIterator last) {
-		m_container.assign(first, last);
+		clear();
+		insert(end(), first, last);
 	}
 	void doAssignIL(std::initializer_list<value_type> il) {
 		assign(il.begin(), il.end());
@@ -714,6 +713,13 @@ protected:
 	void doAssignN(size_type n, const value_type& v) {
 		auto [first, last] = makeValueIteratorRange(n, v);
 		assign(first, last);
+	}
+
+	auto makeValueIteratorRange(size_type n, const value_type& v) {
+		SameValueIterator<const std::reference_wrapper<const value_type>>
+			first(std::cref(v), 0), last(std::cref(v), static_cast<ptrdiff_t>(n));
+		static_assert(std::is_base_of_v<std::random_access_iterator_tag, std::iterator_traits<decltype(first)>::iterator_category>);
+		return std::pair(first, last);
 	}
 
 private:
@@ -749,7 +755,6 @@ private:
 		}
 		static void clear(Derived& d) {
 			(d.*&Accessor::doClear)();
-			assert(d.empty());
 		}
 		template<typename InputIterator>
 		static void assign(Derived& d, InputIterator first, InputIterator last) {
@@ -763,14 +768,448 @@ private:
 			(d.*&Accessor::doAssignN)(n, v);
 		}
 	};
-
-	auto makeValueIteratorRange(size_type n, const value_type& v) {
-		SameValueIterator<const std::reference_wrapper<const value_type>>
-		first(std::cref(v), 0), last(std::cref(v), static_cast<ptrdiff_t>(n));
-		static_assert(std::is_base_of_v<std::random_access_iterator_tag, std::iterator_traits<decltype(first)>::iterator_category>);
-		return std::pair(first, last);
-	}
 };
+
+template<
+	typename Key,
+	typename KeyCompare,
+	typename NodeType,
+	typename ValueCompare = KeyCompare
+>
+struct AssociativeContainerTraits
+{
+	using key_type = Key;
+	using key_compare = KeyCompare;
+	using value_compare = ValueCompare;
+	using node_type = NodeType;
+};
+
+template<
+	typename AssociativeContainer,
+	typename Key = typename AssociativeContainer::key_type,
+	typename KeyCompare = typename AssociativeContainer::key_compare,
+	typename ValueCompare = typename AssociativeContainer::value_compare,
+	typename NodeType = typename AssociativeContainer::node_type
+>
+struct DefaultAssociativeContainerTraits :
+	AssociativeContainerTraits<Key, KeyCompare, NodeType, ValueCompare>
+{};
+
+template<
+	typename Base,
+	typename AssociativeContainerTraits = DefaultAssociativeContainerTraits<typename Base::Container>
+>
+class AssociativeContainerWrapper : public Base, public AssociativeContainerTraits
+{
+protected:
+	using Derived = typename Base::Derived;
+public:
+	using value_type = typename AssociativeContainerWrapper::value_type;
+	using size_type = typename AssociativeContainerWrapper::size_type;
+	using key_compare = typename AssociativeContainerWrapper::key_compare;
+	using value_compare = typename AssociativeContainerWrapper::value_compare;
+	using iterator = typename AssociativeContainerWrapper::iterator;
+	using const_iterator = typename AssociativeContainerWrapper::const_iterator;
+	using key_type = typename AssociativeContainerWrapper::key_type;
+	using node_type = typename AssociativeContainerWrapper::node_type;
+
+	AssociativeContainerWrapper() :
+		AssociativeContainerWrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr))
+	{}
+	AssociativeContainerWrapper(const key_compare& comp) :
+		AssociativeContainerWrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr), comp)
+	{}
+	template<typename InputIterator>
+	AssociativeContainerWrapper(InputIterator first, InputIterator last, const key_compare& comp) :
+		Base(first, last, comp)
+	{}
+	template<typename InputIterator>
+	AssociativeContainerWrapper(InputIterator first, InputIterator last) :
+		AssociativeContainerWrapper(first, last, key_compare())
+	{}
+	AssociativeContainerWrapper(std::initializer_list<value_type> il, const key_compare& comp) :
+		AssociativeContainerWrapper(il.begin(), il.end(), comp)
+	{}
+	AssociativeContainerWrapper(std::initializer_list<value_type> il) :
+		AssociativeContainerWrapper(il.begin(), il.end())
+	{}
+
+	Derived& operator=(std::initializer_list<value_type> il) {
+		clear();
+		insert(il);
+		return derived();
+	}
+
+	key_compare key_comp() const {
+		return Accessor::key_comp(derived());
+	}
+	value_compare value_comp() const {
+		return Accessor::value_comp(derived());
+	}
+	template<typename... Args>
+	iterator emplace_hint(const_iterator pos, Args&&... args) {
+		return Accessor::emplace_hint(derived(), pos, std::forward<Args>(args)...);
+	}
+	iterator insert(const_iterator pos, const value_type& v) {
+		return Accessor::insert(derived(), pos, v);
+	}
+	iterator insert(const_iterator pos, value_type&& v) {
+		return Accessor::insert(derived(), pos, std::move(v));
+	}
+	template<typename InputIterator>
+	void insert(InputIterator first, InputIterator last) {
+		return Accessor::insert(derived(), first, last);
+	}
+	void insert(std::initializer_list<value_type> il) {
+		return Accessor::insert(derived(), il);
+	}
+	iterator insert(const_iterator pos, node_type&& node) {
+		return Accessor::insert(derived(), pos, std::move(node));
+	}
+	template<typename Key>
+	node_type extract(Key&& key) {
+		return Accessor::extract(derived(), std::forward<Key>(key));
+	}
+	node_type extract(const_iterator pos) {
+		return Accessor::extract(derived(), pos);
+	}
+	void merge(Derived& other) {
+		return Accessor::merge(derived(), other);
+	}
+	template<typename Key>
+	size_type erase(Key&& key) {
+		return Accessor::erase(derived(), key);
+	}
+	iterator erase(const_iterator pos) {
+		return Accessor::erase(derived(), pos);
+	}
+	iterator erase(const_iterator first, const_iterator last) {
+		return Accessor::erase(derived(), first, last);
+	}
+	void clear() {
+		return Accessor::clear(derived());
+	}
+	template<typename Key>
+	iterator find(Key&& key) {
+		return Accessor::find(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	const_iterator find(Key&& key) const {
+		return Accessor::find(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	size_type count(Key&& key) const {
+		return Accessor::count(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	iterator lower_bound(Key&& key) {
+		return Accessor::lower_bound(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	const_iterator lower_bound(Key&& key) const {
+		return Accessor::lower_bound(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	iterator upper_bound(Key&& key) {
+		return Accessor::upper_bound(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	const_iterator upper_bound(Key&& key) const {
+		return Accessor::upper_bound(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	std::pair<iterator, iterator> equal_range(Key&& key) {
+		return Accessor::equal_range(derived(), std::forward<Key>(key));
+	}
+	template<typename Key>
+	std::pair<const_iterator, const_iterator> equal_range(Key&& key) const {
+		return Accessor::equal_range(derived(), std::forward<Key>(key));
+	}
+protected:
+	using Base::derived;
+	using Base::m_container;
+
+	using Base::Base;
+	DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(AssociativeContainerWrapper)
+	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(AssociativeContainerWrapper)
+
+	key_compare doKeyComp() const {
+		return m_container.key_comp();
+	}
+	value_compare doValueComp() const {
+		return m_container.value_comp();
+	}
+	template<typename... Args>
+	iterator doEmplaceHint(const_iterator pos, Args&&... args) {
+		return insert(pos, makeNode(std::forward<Args>(args)...));
+	}
+	iterator doInsertHint(const_iterator pos, const value_type& v) {
+		return insert(pos, makeNode(v));
+	}
+	iterator doInsertHintRV(const_iterator pos, value_type&& v) {
+		return insert(pos, makeNode(std::move(v)));
+	}
+	template<typename InputIterator>
+	void doInsertRange(InputIterator first, InputIterator last) {
+		std::for_each(first, last, [](auto&& v) {
+			derived().insert(std::forward<delctype(v)>(v));
+		});
+	}
+	void doInsertIL(std::initializer_list<value_type> il) {
+		insert(il.begin(), il.end());
+	}
+	iterator doInsert(const_iterator pos, node_type&& node) {
+		return m_container.insert(pos, std::move(node));
+	}
+	template<typename F>
+	void doExtract(const_iterator first, const_iterator last, F&& forEachNode)
+	{
+		while(first != last) {
+			std::invoke(std::forward<F>(forEachNode), m_container.extract(first++));
+		}
+	}
+	template<typename Key>
+	node_type doExtractKey(Key&& key) {
+		if(auto it = find(key); it != end()) {
+			return extract(it);
+		}
+		else {
+			return node_type();
+		}
+	}
+	node_type doExtractOne(const_iterator pos) {
+		assert(pos != end());
+		node_type node; auto f = [&node](node_type&& n) { node = std::move(n); };
+		Accessor::extract(derived(), pos, std::next(pos), f);
+		assert(!node.empty());
+		return node;
+	}
+	void doMerge(Derived& other) {
+		for (iterator it = other.begin(); it != other.end();)
+		{
+			if(find(key(*it)) == end())
+			{
+				derived().insert(other.extract(it++));
+			}
+			else {
+				++it;
+			}
+		}
+	}
+	template<typename Key>
+	size_type doEraseKey(Key&& key) {
+		size_type oldSize = size();
+		auto [first, last] = equal_range(std::forward<Key>(key));
+		Accessor::extract(derived(), first, last);
+		return oldSize - size();
+	}
+	iterator doEraseOne(const_iterator pos) {
+		assert(pos != end());
+		iterator r = std::next(pos);
+		Accessor::extract(derived(), pos, std::next(pos));
+		return r;
+	}
+	iterator doErase(const_iterator first, const_iterator last) {
+		Accessor::extract(derived(), first, last);
+		return last;
+	}
+	void doClear() {
+		erase(begin(), end());
+	}
+	template<typename Key>
+	iterator doFind(Key&& key) {
+		return m_container.find(std::forward<Key>(key));
+	}
+	template<typename Key>
+	const_iterator doFindConst(Key&& key) const {
+		return m_container.find(std::forward<Key>(key));
+	}
+	template<typename Key>
+	size_type doCount(Key&& key) const {
+		return m_container.count(std::forward<Key>(key));
+	}
+	template<typename Key>
+	iterator doLowerBound(Key&& key) {
+		return m_container.lower_bound(std::forward<Key>(key));
+	}
+	template<typename Key>
+	const_iterator doLowerBoundConst(Key&& key) const {
+		return m_container.lower_bound(std::forward<Key>(key));
+	}
+	template<typename Key>
+	iterator doUpperBound(Key&& key) {
+		return m_container.upper_bound(std::forward<Key>(key));
+	}
+	template<typename Key>
+	const_iterator doUpperBoundConst(Key&& key) const {
+		return m_container.upper_bound(std::forward<Key>(key));
+	}
+	template<typename Key>
+	std::pair<iterator, iterator> doEqualRange(Key&& key) {
+		return m_container.equal_range(std::forward<Key>(key));
+	}
+	template<typename Key>
+	std::pair<const_iterator, const_iterator> doEqualRangeConst(Key&& key) const {
+		return m_container.equal_range(std::forward<Key>(key));
+	}
+
+	template<typename V>
+	decltype(auto) key(V&& v) {
+		if constexpr (std::is_same_v<key_type, value_type>) {
+			return std::forward<V>(v);
+		}
+		else {
+			auto&& [key, value] = std::forward<V>(v);
+			return std::forward<decltype(key)>(key);
+		}
+	}
+	template<typename... Args>
+	node_type makeNode(Args&&... args) {
+		decltype(m_container) c;
+		c.emplace(std::forward<Args>(args)...);
+		return c.extract(c.begin());
+	}
+private:
+	struct Accessor : Derived
+	{
+		static key_compare key_comp(const Derived& d) {
+			return (d.*&Accessor::doKeyComp)();
+		}
+		static value_compare value_comp(const Derived& d) {
+			return (d.*&Accessor::doValueComp)();
+		}
+		template<typename... Args>
+		static iterator emplace_hint(Derived& d, const_iterator pos, Args&&... args) {
+			auto memfn = &Accessor::doEmplaceHint<Args...>;
+			return (d.*memfn)(pos, std::forward<Args>(args)...);
+		}
+		static iterator insert(Derived& d, const_iterator pos, const value_type& v) {
+			return (d.*&Accessor::doInsertHint)(pos, v);
+		}
+		static iterator insert(Derived& d, const_iterator pos, value_type&& v) {
+			return (d.*&Accessor::doInsertHintRV)(pos, std::move(v));
+		}
+		template<typename InputIterator>
+		static void insert(Derived& d, InputIterator first, InputIterator last) {
+			auto memfn = &Accessor::doInsertRange<InputIterator>;
+			(d.*memfn)(first, last);
+		}
+		static void insert(Derived& d, std::initializer_list<value_type> il) {
+			(d.*&Accessor::doInsertIL)(il);
+		}
+		static iterator insert(Derived& d, const_iterator pos, node_type&& node) {
+			return (d.*&Accessor::doInsert)(pos, std::move(node));
+		}
+		template<typename F>
+		static void extract(Derived& d, const_iterator first, const_iterator last, F&& forEachNode) {
+			auto memfn = &Accessor::doExtract<F>;
+			(d.*memfn)(first, last, std::forward<F>(forEachNode));
+		}
+		static void extract(Derived& d, const_iterator first, const_iterator last) {
+			extract(d, first, last, tc::NOP<void, node_type&&>{});
+		}
+		template<typename Key>
+		static node_type extract(Derived& d, Key&& key) {
+			auto memfn = &Accessor::doExtractKey<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		static node_type extract(Derived& d, const_iterator pos) {
+			return (d.*&Accessor::doExtractOne)(pos);
+		}
+		static void merge(Derived& d, const Derived& other) {
+			return (d.*&Accessor::doMerge)(other);
+		}
+		template<typename Key>
+		static size_type erase(Derived& d, Key&& key) {
+			auto memfn = &Accessor::doEraseKey<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		static iterator erase(Derived& d, const_iterator pos) {
+			return (d.*&Accessor::doEraseOne)(pos);
+		}
+		static iterator erase(Derived& d, const_iterator first, const_iterator last) {
+			return (d.*&Accessor::doErase)(first, last);
+		}
+		static void clear(Derived& d) {
+			return (d.*&Accessor::doClear)();
+		}
+		template<typename Key>
+		static iterator find(Derived& d, Key&& key) {
+			auto memfn = &Accessor::doFind<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static const_iterator find(const Derived& d, Key&& key) {
+			auto memfn = &Accessor::doFindConst<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static size_type count(const Derived& d, Key&& key) {
+			auto memfn = &Accessor::doCount<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static iterator lower_bound(Derived& d, Key&& key) {
+			auto memfn = &Accessor::doLowerBound<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static const_iterator lower_bound(const Derived& d, Key&& key) {
+			auto memfn = &Accessor::doLowerBoundConst<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static iterator upper_bound(Derived& d, Key&& key) {
+			auto memfn = &Accessor::doUpperBound<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static const_iterator upper_bound(const Derived& d, Key&& key) {
+			auto memfn = &Accessor::doUpperBoundConst<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static std::pair<iterator, iterator> equal_range(Derived& d, Key&& key) {
+			auto memfn = &Accessor::doEqualRange<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+		template<typename Key>
+		static std::pair<const_iterator, const_iterator> equal_range(const Derived& d, Key&& key) {
+			auto memfn = &Accessor::doEqualRangeConst<Key>;
+			return (d.*memfn)(std::forward<Key>(key));
+		}
+	};
+};
+
+namespace map
+{
+
+template<
+	typename Key,
+	typename KeyCompare,
+	typename Mapped,
+	typename ValueCompare,
+	typename NodeType
+>
+struct AssociativeContainerTraits :
+	tc::container::AssociativeContainerTraits<Key, KeyCompare, NodeType, ValueCompare>
+{
+	using mapped_type = Mapped;
+};
+
+template<
+	typename AssociativeContainer,
+	typename Key = typename AssociativeContainer::key_type,
+	typename KeyCompare = typename AssociativeContainer::key_compare,
+	typename Mapped = typename AssociativeContainer::mapped_type,
+	typename ValueCompare = typename AssociativeContainer::value_compare,
+	typename NodeType = typename AssociativeContainer::node_type
+>
+struct DefaultAssociativeContainerTraits :
+	AssociativeContainerTraits<Key, KeyCompare, Mapped, ValueCompare, NodeType>
+{};
+
+}
 
 }
 

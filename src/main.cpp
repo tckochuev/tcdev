@@ -35,6 +35,7 @@
 
 #include <boost/signals2.hpp>
 
+#include <set>
 #include "Container.h"
 
 //template<typename ContainerT>
@@ -153,7 +154,6 @@ public:
     boost::signals2::signal<void(size_type, const_iterator)> inserted;
     boost::signals2::signal<void(const_iterator, const_iterator)> aboutToBeErased;
     boost::signals2::signal<void(size_type, const_iterator)> erased;
-    boost::signals2::signal<void()> reassigned;
 
 protected:
     void doSwap(ObservableVector& other) {
@@ -173,18 +173,53 @@ protected:
         erased(oldSize - size(), r);
         return r;
     }
-    void doClear() {
-        if(size_type oldSize = size())
+    //void doClear() {
+    //    if(size_type oldSize = size())
+    //    {
+    //        aboutToBeErased(begin(), end());
+    //        SequenceContainerWrapper::doClear();
+    //        erased(oldSize - size(), end());
+    //    }
+    //}
+    //template<typename InputIterator>
+    //void doAssign(InputIterator first, InputIterator last) {
+    //    SequenceContainerWrapper::doAssign(first, last);
+    //    reassigned();
+    //}
+};
+
+class ObservableSet :
+    public tc::container::AssociativeContainerWrapper<
+        tc::container::ReversibleContainerWrapper<ObservableSet, std::set<int>>
+    >
+{
+public:
+    ObservableSet::AssociativeContainerWrapper::AssociativeContainerWrapper;
+    ObservableSet(const ObservableSet&) = delete;
+    ObservableSet(ObservableSet&&) = delete;
+    ObservableSet& operator=(const ObservableSet&) = delete;
+    ObservableSet& operator=(ObservableSet&&) = delete;
+
+    boost::signals2::signal<void(const_iterator)> inserted;
+    boost::signals2::signal<void(const_iterator, const_iterator)> aboutToBeErased;
+    boost::signals2::signal<void(size_type, const_iterator)> erased;
+
+protected:
+    template<typename OutputIterator>
+    void doExtract(const_iterator first, const_iterator last, OutputIterator out)
+    {
+        if(first != last)
         {
-            aboutToBeErased(begin(), end());
-            SequenceContainerWrapper::doClear();
-            erased(oldSize - size(), end());
+            aboutToBeErased(first, last);
+            size_type oldSize = size();
+            AssociativeContainerWrapper::doExtract(first, last, out);
+            erased(oldSize - size(), last);
         }
     }
-    template<typename InputIterator>
-    void doAssign(InputIterator first, InputIterator last) {
-        SequenceContainerWrapper::doAssign(first, last);
-        reassigned();
+    iterator doInsert(const_iterator pos, node_type&& node) {
+        auto r = AssociativeContainerWrapper::doInsert(pos, std::move(node));
+        inserted(r);
+        return r;
     }
 };
 
@@ -198,25 +233,28 @@ int main()
 
     ObservableVector v;
     v.aboutToBeErased.connect([&](ObservableVector::const_iterator first, ObservableVector::const_iterator last) {
-        auto firstIdx = std::distance(v.begin(), first), lastIdx = std::distance(v.begin(), last);
-        std::cout << "about to be erased [" << firstIdx << "," << lastIdx << "]" << std::endl;
+        if(first != last) {
+            auto firstIdx = std::distance(v.begin(), first), lastIdx = std::distance(v.begin(), last);
+            std::cout << "about to be erased [" << firstIdx << "," << lastIdx << "]" << std::endl;
+        }
     });
     v.erased.connect([&](ObservableVector::size_type n, ObservableVector::const_iterator pos) {
-        auto idx = std::distance(v.begin(), pos);
-        std::cout << "erased " << n << " elements before index " << idx << " --> ";
-        print(v);
-        std::endl(std::cout);
+        if(n > 0)
+        {
+            auto idx = std::distance(v.begin(), pos);
+            std::cout << "erased " << n << " elements before index " << idx << " --> ";
+            print(v);
+            std::endl(std::cout);
+        }
     });
     v.inserted.connect([&](auto n, auto pos) {
-        auto idx = std::distance(v.begin(), pos);
-        std::cout << "inserted " << n << " elements before index " << idx << " --> ";
-        print(v);
-        std::endl(std::cout);
-    });
-    v.reassigned.connect([&]() {
-        std::cout << "reassigned " << v.size() << " elements --> ";
-        print(v);
-        std::endl(std::cout);
+        if(n > 0)
+        {
+            auto idx = std::distance(v.begin(), pos);
+            std::cout << "inserted " << n << " elements before index " << idx << " --> ";
+            print(v);
+            std::endl(std::cout);
+        }
     });
 
     v.assign({1, 2, 3, 4, 5, 6, 7, 8});
@@ -230,7 +268,35 @@ int main()
         else ++it;
     }
     v.insert(v.end(), {1, 2, 3});
+    v.assign(static_cast<decltype(v)::size_type>(10), 5);
     v.clear();
+
+    std::cout << "------" << std::endl;
+
+    ObservableSet s({1, 4, 8});
+    s.aboutToBeErased.connect([&](auto first, auto last) {
+        if(first != last) {
+            auto firstIdx = std::distance(s.begin(), first), lastIdx = std::distance(s.begin(), last);
+            std::cout << "about to be erased [" << firstIdx << "," << lastIdx << "]" << std::endl;
+        }
+    });
+    s.erased.connect([&](auto n, auto pos) {
+        if(n > 0)
+        {
+            auto idx = std::distance(s.begin(), pos);
+            std::cout << "erased " << n << " elements before index " << idx << " --> ";
+            print(s);
+            std::endl(std::cout);
+        }
+    });
+    s.inserted.connect([&](auto pos) {
+        auto idx = std::distance(s.begin(), pos);
+        std::cout << "inserted " << idx << " --> ";
+        print(s);
+        std::endl(std::cout);
+    });
+
+    s.erase(s.begin());
 
 
     return 0;
