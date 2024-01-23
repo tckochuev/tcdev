@@ -140,12 +140,12 @@ typename Container::size_type erase_if(
 }
 
 class ObservableVector :
-    public tc::container::SequenceContainerWrapper<
-        tc::container::ReversibleContainerWrapper<ObservableVector, std::vector<int>>
+    public tc::container::seq::Wrapper<
+        tc::container::revers::Wrapper<ObservableVector, std::vector<int>>
     >
 {
 public:
-    using ObservableVector::SequenceContainerWrapper::SequenceContainerWrapper;
+    using Wrapper::Wrapper;
     ObservableVector(const ObservableVector&) = delete;
     ObservableVector(ObservableVector&&) = delete;
     ObservableVector& operator=(const ObservableVector&) = delete;
@@ -162,39 +162,26 @@ protected:
     template<typename InputIterator>
     iterator doInsert(const_iterator pos, InputIterator first, InputIterator last) {
         size_type oldSize = size();
-        auto next = SequenceContainerWrapper::doInsert(pos, first, last);
+        auto next = Wrapper::doInsert(pos, first, last);
         inserted(size() - oldSize, next);
         return next;
     }
     iterator doErase(const_iterator first, const_iterator last) {
         aboutToBeErased(first, last);
         size_type oldSize = size();
-        auto r = SequenceContainerWrapper::doErase(first, last);
+        auto r = Wrapper::doErase(first, last);
         erased(oldSize - size(), r);
         return r;
     }
-    //void doClear() {
-    //    if(size_type oldSize = size())
-    //    {
-    //        aboutToBeErased(begin(), end());
-    //        SequenceContainerWrapper::doClear();
-    //        erased(oldSize - size(), end());
-    //    }
-    //}
-    //template<typename InputIterator>
-    //void doAssign(InputIterator first, InputIterator last) {
-    //    SequenceContainerWrapper::doAssign(first, last);
-    //    reassigned();
-    //}
 };
 
 class ObservableSet :
-    public tc::container::AssociativeContainerWrapper<
-        tc::container::ReversibleContainerWrapper<ObservableSet, std::set<int>>
+    public tc::container::assoc::Wrapper<
+        tc::container::revers::Wrapper<ObservableSet, std::set<int>>
     >
 {
 public:
-    ObservableSet::AssociativeContainerWrapper::AssociativeContainerWrapper;
+    using Wrapper::Wrapper;
     ObservableSet(const ObservableSet&) = delete;
     ObservableSet(ObservableSet&&) = delete;
     ObservableSet& operator=(const ObservableSet&) = delete;
@@ -212,15 +199,64 @@ protected:
         {
             aboutToBeErased(first, last);
             size_type oldSize = size();
-            AssociativeContainerWrapper::doExtract(first, last, out);
+            Wrapper::doExtract(first, last, out);
             erased(oldSize - size(), last);
         }
     }
     iterator doInsert(const_iterator pos, node_type&& node) {
-        auto r = AssociativeContainerWrapper::doInsert(pos, std::move(node));
+        auto r = Wrapper::doInsert(pos, std::move(node));
         inserted(r);
         return r;
     }
+};
+
+class EvenCountingList :
+    public tc::container::seq::Wrapper<
+        tc::container::revers::Wrapper<EvenCountingList, std::list<int>>
+    >
+{
+public:
+    template<typename InputIterator>
+    EvenCountingList(InputIterator first, InputIterator last) : Wrapper(first, last)
+    {}
+    using Wrapper::Wrapper;
+    EvenCountingList(const EvenCountingList&) = default;
+    EvenCountingList(EvenCountingList&& other) noexcept : Wrapper(std::move(other)), m_evenCount(other.m_evenCount) {
+        other.m_evenCount = std::count_if(other.begin(), other.end(), &isEven);
+    }
+    EvenCountingList& operator=(const EvenCountingList&) = default;
+    EvenCountingList& operator=(EvenCountingList&& other) {
+        EvenCountingList tmp(std::move(other));
+        this->swap(tmp);
+        return *this;
+    }
+
+    int evenCount() const {
+        return m_evenCount;
+    }
+
+protected:
+    static bool isEven(int v) {
+        return v % 2 == 0;
+    }
+
+    void doSwap(EvenCountingList& other) {
+        Wrapper::doSwap(other);
+        using std::swap;
+        swap(m_evenCount, other.m_evenCount);
+    }
+    template<typename InputIterator>
+    iterator doInsert(const_iterator pos, InputIterator first, InputIterator last) {
+        m_evenCount += std::count_if(first, last, &isEven);
+        return Wrapper::doInsert(pos, first, last);
+    }
+    iterator doErase(const_iterator first, const_iterator last) {
+        m_evenCount -= std::count_if(first, last, &isEven);
+        assert(m_evenCount >= 0);
+        return Wrapper::doErase(first, last);
+    }
+
+    int m_evenCount = std::count_if(begin(), end(), &isEven);
 };
 
 int main()
@@ -298,6 +334,10 @@ int main()
 
     s.erase(s.begin());
 
+    EvenCountingList l({1, 2, 3, 4, 5});
+    std::cout << l.evenCount() << std::endl;
+    EvenCountingList l2(l);
+    std::cout << l2.evenCount() << std::endl;
 
     return 0;
 }

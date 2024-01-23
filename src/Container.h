@@ -262,7 +262,7 @@ template<
 	typename ConstReference = typename std::iterator_traits<ConstIterator>::reference,
 	typename Difference = typename std::iterator_traits<Iterator>::difference_type
 >
-struct ContainerTraits
+struct Traits
 {
 	using value_type = Value;
 	using reference = Reference;
@@ -283,59 +283,24 @@ template<
 	typename ConstReference = typename std::iterator_traits<ConstIterator>::reference,
 	typename Difference = typename std::iterator_traits<Iterator>::difference_type
 >
-struct DefaultContainerTraits :
-	ContainerTraits<Size, ConstIterator, Iterator, Value, Reference, ConstReference, Difference>
+struct DefaultTraits :
+	Traits<Size, ConstIterator, Iterator, Value, Reference, ConstReference, Difference>
 {};
-
-template<
-	typename Size,
-	typename ConstIterator,
-	typename ConstReverseIterator,
-	typename Iterator = ConstIterator,
-	typename ReverseIterator = ConstReverseIterator,
-	typename Value = typename std::iterator_traits<Iterator>::value_type,
-	typename Reference = typename std::iterator_traits<Iterator>::reference,
-	typename ConstReference = typename std::iterator_traits<ConstIterator>::reference,
-	typename Difference = typename std::iterator_traits<Iterator>::difference_type
->
-struct ReversibleContainerTraits :
-	ContainerTraits<Size, ConstIterator, Iterator, Value, Reference, ConstReference, Difference>
-{
-	using reverse_iterator = ReverseIterator;
-	using const_reverse_iterator = ConstReverseIterator;
-};
-
-template<
-	typename ReversibleContainer,
-	typename Size = typename ReversibleContainer::size_type,
-	typename ConstIterator = typename ReversibleContainer::const_iterator,
-	typename ConstReverseIterator = typename ReversibleContainer::const_reverse_iterator,
-	typename Iterator = ConstIterator,
-	typename ReverseIterator = ConstReverseIterator,
-	typename Value = typename std::iterator_traits<Iterator>::value_type,
-	typename Reference = typename std::iterator_traits<Iterator>::reference,
-	typename ConstReference = typename std::iterator_traits<ConstIterator>::reference,
-	typename Difference = typename std::iterator_traits<Iterator>::difference_type
->
-struct DefaultReversibleContainerTraits :
-	ReversibleContainerTraits<Size, ConstIterator, ConstReverseIterator, Iterator, ReverseIterator, Value, Reference, ConstReference, Difference>
-{};
-
 
 template<
 	typename TDerived,
 	typename TContainer,
-	typename TContainerTraits = DefaultContainerTraits<TContainer>
+	typename TTraits = DefaultTraits<TContainer>
 >
-class ContainerWrapper : public TContainerTraits
+class Wrapper : public TTraits
 {
 public:
 	using Derived = TDerived;
 	using Container = TContainer;
-	using ContainerTraits = TContainerTraits;
-	using iterator = typename ContainerWrapper::iterator;
-	using const_iterator = typename ContainerWrapper::const_iterator;
-	using size_type = typename ContainerWrapper::size_type;
+	using Traits = TTraits;
+	using iterator = typename Wrapper::iterator;
+	using const_iterator = typename Wrapper::const_iterator;
+	using size_type = typename Wrapper::size_type;
 
 	iterator begin() {
 		return Accessor::begin(derived());
@@ -369,10 +334,13 @@ public:
 	}
 
 protected:
-	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ContainerWrapper)
-	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ContainerWrapper)
-	template<typename... Args>
-	ContainerWrapper(Args&&... args) : m_container(std::forward<Args>(args)...) {}
+	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(Wrapper)
+	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(Wrapper)
+	template<
+		typename... Args,
+		typename = std::enable_if_t<sizeof...(Args) != 1 || !std::is_base_of_v<Wrapper, std::decay_t<Args>...>>
+	>
+	Wrapper(Args&&... args) : m_container(std::forward<Args>(args)...) {}
 
 	iterator doBegin() {
 		return m_container.begin();
@@ -396,10 +364,10 @@ protected:
 		return m_container.empty();
 	}
 	void doSwap(Derived& other) {
-		m_container.swap(static_cast<ContainerWrapper&>(other).m_container);
+		m_container.swap(static_cast<Wrapper&>(other).m_container);
 	}
 	bool doEqual(const Derived& other) const {
-		return m_container == static_cast<const ContainerWrapper&>(other).m_container;
+		return m_container == static_cast<const Wrapper&>(other).m_container;
 	}
 	Derived& derived() {
 		return static_cast<Derived&>(*this);
@@ -440,7 +408,7 @@ private:
 			return (d.*&Accessor::doEqual)(other);
 		}
 	};
-	friend bool operator==(const ContainerWrapper&, const ContainerWrapper&);
+	friend bool operator==(const Wrapper&, const Wrapper&);
 };
 
 template<
@@ -449,11 +417,11 @@ template<
 	typename CT
 >
 bool operator==(
-	const ContainerWrapper<D, C, CT>& lhs,
-	const ContainerWrapper<D, C, CT>& rhs
+	const Wrapper<D, C, CT>& lhs,
+	const Wrapper<D, C, CT>& rhs
 )
 {
-	return ContainerWrapper<D, C, CT>::Accessor::equal(lhs.derived(), rhs.derived());
+	return Wrapper<D, C, CT>::Accessor::equal(lhs.derived(), rhs.derived());
 }
 
 template<
@@ -462,8 +430,8 @@ template<
 	typename CT
 >
 bool operator!=(
-	const ContainerWrapper<D, C, CT>& lhs,
-	const ContainerWrapper<D, C, CT>& rhs
+	const Wrapper<D, C, CT>& lhs,
+	const Wrapper<D, C, CT>& rhs
 )
 {
 	return !(lhs == rhs);
@@ -475,28 +443,70 @@ template<
 	typename CT
 >
 void swap(
-	ContainerWrapper<D, C, CT>& lhs,
-	ContainerWrapper<D, C, CT>& rhs
+	Wrapper<D, C, CT>& lhs,
+	Wrapper<D, C, CT>& rhs
 )
 {
 	return lhs.swap(static_cast<D&>(rhs));
 }
 
+namespace revers
+{
+
+template<
+	typename Size,
+	typename ConstIterator,
+	typename ConstReverseIterator,
+	typename Iterator = ConstIterator,
+	typename ReverseIterator = ConstReverseIterator,
+	typename Value = typename std::iterator_traits<Iterator>::value_type,
+	typename Reference = typename std::iterator_traits<Iterator>::reference,
+	typename ConstReference = typename std::iterator_traits<ConstIterator>::reference,
+	typename Difference = typename std::iterator_traits<Iterator>::difference_type
+>
+struct Traits :
+	tc::container::Traits<
+		Size, ConstIterator, Iterator, Value, Reference, ConstReference, Difference
+	>
+{
+	using reverse_iterator = ReverseIterator;
+	using const_reverse_iterator = ConstReverseIterator;
+};
+
+template<
+	typename Container,
+	typename Size = typename Container::size_type,
+	typename ConstIterator = typename Container::const_iterator,
+	typename ConstReverseIterator = typename Container::const_reverse_iterator,
+	typename Iterator = ConstIterator,
+	typename ReverseIterator = ConstReverseIterator,
+	typename Value = typename std::iterator_traits<Iterator>::value_type,
+	typename Reference = typename std::iterator_traits<Iterator>::reference,
+	typename ConstReference = typename std::iterator_traits<ConstIterator>::reference,
+	typename Difference = typename std::iterator_traits<Iterator>::difference_type
+>
+struct DefaultTraits :
+	Traits<
+		Size, ConstIterator, ConstReverseIterator, Iterator, ReverseIterator,
+		Value, Reference, ConstReference, Difference
+	>
+{};
+
 template<
 	typename Derived,
-	typename ReversibleContainer,
-	typename ReversibleContainerTraits = DefaultReversibleContainerTraits<ReversibleContainer>
+	typename Container,
+	typename Traits = DefaultTraits<Container>
 >
-class ReversibleContainerWrapper :
-	public ContainerWrapper<
+class Wrapper :
+	public tc::container::Wrapper<
 		Derived,
-		ReversibleContainer,
-		ReversibleContainerTraits
+		Container,
+		Traits
 	>
 {
 public:
-	using reverse_iterator = typename ReversibleContainerTraits::reverse_iterator;
-	using const_reverse_iterator = typename ReversibleContainerTraits::const_reverse_iterator;
+	using reverse_iterator = typename Wrapper::reverse_iterator;
+	using const_reverse_iterator = typename Wrapper::const_reverse_iterator;
 
 	reverse_iterator rbegin() {
 		return Accessor::rbegin(derived());
@@ -518,12 +528,13 @@ public:
 	}
 
 protected:
-	using ReversibleContainerWrapper::ContainerWrapper::m_container;
-	using ReversibleContainerWrapper::ContainerWrapper::derived;
+	using Super = tc::container::Wrapper<Derived, Container, Traits>;
+	using Super::m_container;
+	using Super::derived;
 
-	using ReversibleContainerWrapper::ContainerWrapper::ContainerWrapper;
-	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ReversibleContainerWrapper)
-	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ReversibleContainerWrapper)
+	using Super::Super;
+	DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(Wrapper)
+	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(Wrapper)
 
 	reverse_iterator doRBegin() {
 		return m_container.rbegin();
@@ -555,6 +566,8 @@ private:
 		}
 	};
 };
+
+}
 
 template<typename Value, typename State = ptrdiff_t>
 class SameValueIterator :
@@ -591,30 +604,32 @@ private:
 	friend class boost::iterator_core_access;
 };
 
+namespace seq
+{
 /**@tparam Base ReversibleContainerWrapper or ContainerWrapper*/
 template<typename Base>
-class SequenceContainerWrapper : public Base
+class Wrapper : public Base
 {
 public:
 	using Derived = typename Base::Derived;
-	using value_type = typename SequenceContainerWrapper::value_type;
-	using iterator = typename SequenceContainerWrapper::iterator;
-	using const_iterator = typename SequenceContainerWrapper::const_iterator;
-	using size_type = typename SequenceContainerWrapper::size_type;
+	using value_type = typename Wrapper::value_type;
+	using iterator = typename Wrapper::iterator;
+	using const_iterator = typename Wrapper::const_iterator;
+	using size_type = typename Wrapper::size_type;
 
-	SequenceContainerWrapper() : SequenceContainerWrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr)) {}
-	SequenceContainerWrapper(size_type n, const value_type& v) :
-		SequenceContainerWrapper(
+	Wrapper() : Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr)) {}
+	Wrapper(size_type n, const value_type& v) :
+		Wrapper(
 			SameValueIterator<const std::reference_wrapper<const value_type>>(v, 0),
 			SameValueIterator<const std::reference_wrapper<const value_type>>(v, n)
 		)
 	{}
 	template<typename InputIterator>
-	SequenceContainerWrapper(InputIterator first, InputIterator last) :
+	Wrapper(InputIterator first, InputIterator last) :
 		Base(first, last)
 	{}
-	SequenceContainerWrapper(std::initializer_list<value_type> il) :
-		SequenceContainerWrapper(il.begin(), il.end())
+	Wrapper(std::initializer_list<value_type> il) :
+		Wrapper(il.begin(), il.end())
 	{}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
@@ -666,8 +681,8 @@ protected:
 	using Base::derived;
 
 	using Base::Base;
-	DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(SequenceContainerWrapper)
-	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(SequenceContainerWrapper)
+	DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(Wrapper)
+	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(Wrapper)
 
 	template<typename... Args>
 	iterator doEmplace(const_iterator pos, Args&&... args) {
@@ -770,13 +785,18 @@ private:
 	};
 };
 
+}
+
+namespace assoc
+{
+
 template<
 	typename Key,
 	typename KeyCompare,
 	typename NodeType,
 	typename ValueCompare = KeyCompare
 >
-struct AssociativeContainerTraits
+struct Traits
 {
 	using key_type = Key;
 	using key_compare = KeyCompare;
@@ -785,53 +805,52 @@ struct AssociativeContainerTraits
 };
 
 template<
-	typename AssociativeContainer,
-	typename Key = typename AssociativeContainer::key_type,
-	typename KeyCompare = typename AssociativeContainer::key_compare,
-	typename ValueCompare = typename AssociativeContainer::value_compare,
-	typename NodeType = typename AssociativeContainer::node_type
+	typename Container,
+	typename Key = typename Container::key_type,
+	typename KeyCompare = typename Container::key_compare,
+	typename ValueCompare = typename Container::value_compare,
+	typename NodeType = typename Container::node_type
 >
-struct DefaultAssociativeContainerTraits :
-	AssociativeContainerTraits<Key, KeyCompare, NodeType, ValueCompare>
+struct DefaultTraits :
+	Traits<Key, KeyCompare, NodeType, ValueCompare>
 {};
 
 template<
 	typename Base,
-	typename AssociativeContainerTraits = DefaultAssociativeContainerTraits<typename Base::Container>
+	typename Traits = DefaultTraits<typename Base::Container>
 >
-class AssociativeContainerWrapper : public Base, public AssociativeContainerTraits
+class Wrapper : public Base, public Traits
 {
-protected:
-	using Derived = typename Base::Derived;
 public:
-	using value_type = typename AssociativeContainerWrapper::value_type;
-	using size_type = typename AssociativeContainerWrapper::size_type;
-	using key_compare = typename AssociativeContainerWrapper::key_compare;
-	using value_compare = typename AssociativeContainerWrapper::value_compare;
-	using iterator = typename AssociativeContainerWrapper::iterator;
-	using const_iterator = typename AssociativeContainerWrapper::const_iterator;
-	using key_type = typename AssociativeContainerWrapper::key_type;
-	using node_type = typename AssociativeContainerWrapper::node_type;
+	using Derived = typename Base::Derived;
+	using value_type = typename Wrapper::value_type;
+	using size_type = typename Wrapper::size_type;
+	using key_compare = typename Wrapper::key_compare;
+	using value_compare = typename Wrapper::value_compare;
+	using iterator = typename Wrapper::iterator;
+	using const_iterator = typename Wrapper::const_iterator;
+	using key_type = typename Wrapper::key_type;
+	using node_type = typename Wrapper::node_type;
 
-	AssociativeContainerWrapper() :
-		AssociativeContainerWrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr))
+	Wrapper() :
+		Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr))
 	{}
-	AssociativeContainerWrapper(const key_compare& comp) :
-		AssociativeContainerWrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr), comp)
+	Wrapper(const key_compare& comp) :
+		Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr), comp)
 	{}
 	template<typename InputIterator>
-	AssociativeContainerWrapper(InputIterator first, InputIterator last, const key_compare& comp) :
+	Wrapper(InputIterator first, InputIterator last, const key_compare& comp) :
 		Base(first, last, comp)
 	{}
 	template<typename InputIterator>
-	AssociativeContainerWrapper(InputIterator first, InputIterator last) :
-		AssociativeContainerWrapper(first, last, key_compare())
+	Wrapper(InputIterator first, InputIterator last) :
+		Wrapper(first, last, key_compare())
 	{}
-	AssociativeContainerWrapper(std::initializer_list<value_type> il, const key_compare& comp) :
-		AssociativeContainerWrapper(il.begin(), il.end(), comp)
+	Wrapper(std::initializer_list<value_type> il, const key_compare& comp) :
+		Wrapper(il.begin(), il.end(), comp)
 	{}
-	AssociativeContainerWrapper(std::initializer_list<value_type> il) :
-		AssociativeContainerWrapper(il.begin(), il.end())
+	Wrapper(std::initializer_list<value_type> il) :
+		Wrapper(il.begin(), il.end())
 	{}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
@@ -839,7 +858,6 @@ public:
 		insert(il);
 		return derived();
 	}
-
 	key_compare key_comp() const {
 		return Accessor::key_comp(derived());
 	}
@@ -930,8 +948,8 @@ protected:
 	using Base::m_container;
 
 	using Base::Base;
-	DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(AssociativeContainerWrapper)
-	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(AssociativeContainerWrapper)
+	DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(Wrapper)
+	DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(Wrapper)
 
 	key_compare doKeyComp() const {
 		return m_container.key_comp();
@@ -1181,36 +1199,28 @@ private:
 	};
 };
 
-namespace map
+namespace uniq
 {
 
 template<
-	typename Key,
-	typename KeyCompare,
-	typename Mapped,
-	typename ValueCompare,
-	typename NodeType
+	typename Base,
+	typename Traits = DefaultTraits<typename Base::Container>
 >
-struct AssociativeContainerTraits :
-	tc::container::AssociativeContainerTraits<Key, KeyCompare, NodeType, ValueCompare>
+class Wrapper : tc::container::assoc::Wrapper<Base, Traits>
 {
-	using mapped_type = Mapped;
+public:
+	using Base::Base;
 };
 
-template<
-	typename AssociativeContainer,
-	typename Key = typename AssociativeContainer::key_type,
-	typename KeyCompare = typename AssociativeContainer::key_compare,
-	typename Mapped = typename AssociativeContainer::mapped_type,
-	typename ValueCompare = typename AssociativeContainer::value_compare,
-	typename NodeType = typename AssociativeContainer::node_type
->
-struct DefaultAssociativeContainerTraits :
-	AssociativeContainerTraits<Key, KeyCompare, Mapped, ValueCompare, NodeType>
-{};
+}
+
+namespace multi
+{
 
 }
 
-}
+} // assoc
+
+} //tc::container
 
 #endif
