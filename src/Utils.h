@@ -67,22 +67,19 @@
 		}\
 	}
 
-#define DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
+#define DECL_CP_MV_CTOR_BY_DFLT(ClassName)\
 ClassName(const ClassName&) = default;\
 ClassName(ClassName&&) noexcept = default;
 
-#define DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
-ClassName() = default;\
-DECLARE_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)
-
-#define DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ClassName)\
+#define DECL_CP_MV_ASGMT_BY_DFLT(ClassName)\
 ClassName& operator=(const ClassName&) = default;\
 ClassName& operator=(ClassName&&) noexcept = default;
 
 #define INTERFACE(ClassName)\
 protected:\
-DECLARE_DEFAULT_COPY_MOVE_CTORS_BY_DEFAULT(ClassName)\
-DECLARE_COPY_MOVE_ASSIGN_BY_DEFAULT(ClassName)\
+ClassName() = default;\
+DECL_CP_MV_CTOR_BY_DFLT(ClassName)\
+DECL_CP_MV_ASGMT_BY_DFLT(ClassName)\
 public:\
 virtual ~ClassName() = default;
 
@@ -134,7 +131,7 @@ template<typename InputRange, typename Value>
 typename boost::range_iterator<std::remove_reference_t<InputRange>>::type
 find(InputRange&& range, const Value& value)
 {
-	if constexpr (isDetected<detail::memberFunctionFind, InputRange&, decltype(value)>) {
+	if constexpr (isDetected<detail::memberFunctionFind, decltype(range), decltype(value)>) {
 		return range.find(value);
 	}
 	else {

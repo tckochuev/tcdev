@@ -4,56 +4,14 @@
 #include <set>
 #include <optional>
 
-#include "Utils.h"
-//#include "SequencedSet.h"
-
-#include <boost/range.hpp>
-#include <boost/range/any_range.hpp>
-#include <boost/range/adaptors.hpp>
-
-#include <boost/filesystem/path.hpp>
-
-#include <boost/type_erasure/any.hpp>
-#include <boost/type_erasure/any_cast.hpp>
-#include <boost/mpl/vector.hpp>
-#include <boost/type_erasure/iterator.hpp>
-#include <boost/type_erasure/same_type.hpp>
-#include <boost/type_erasure/relaxed.hpp>
-#include <boost/type_erasure/typeid_of.hpp>
-#include <boost/type_erasure/builtin.hpp>
-#include <boost/type_erasure/operators.hpp>
-
-#include <queue>
-#include <boost/iterator/indirect_iterator.hpp>
-#include <boost/iterator/function_input_iterator.hpp>
-
-#include <sstream>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/unordered_map.hpp>
+#include "VSUtils.h"
 
 #include <boost/signals2.hpp>
 
+#include <vector>
+#include <list>
 #include <set>
-#include "Container.h"
-
-//template<typename ContainerT>
-//class ContainerAdaptor : public tc::ReversibleContainerAdaptor<ContainerT>
-//{
-//public:
-//    using Super = tc::ReversibleContainerAdaptor<ContainerT>;
-//    using Container = typename Super::Container;
-//
-//    ContainerAdaptor(const Container& c) : m_container(c) {}
-//
-//private:
-//    const Container& container() const override {
-//        return m_container;
-//    }
-//
-//    Container m_container;
-//};
+#include "VSContainer.h"
 
 #define MOUSE_BUTTONS \
 X(LeftButton,1)   \
@@ -96,48 +54,6 @@ bool fromString(const std::string& str, MouseButton& output)
 }
 
 #undef MOUSE_BUTTONS
-
-template<typename Container, typename Iterator, typename Predicate>
-typename Container::size_type erase_if(
-    Container& container,
-    Iterator first,
-    Iterator last,
-    Predicate&& predicate = Predicate()
-)
-{
-    typename Container::size_type oldSize = container.size();
-    if constexpr (std::is_move_assignable_v<typename std::iterator_traits<Iterator>::reference>)
-    {
-        Iterator removedFirst = std::remove_if(first, last, std::forward<Predicate>(predicate));
-        container.erase(removedFirst, last);
-    }
-    else
-    {
-        //Use non const iterator if this assertion is not satisfied.(This ensures that use of this function is effective as possible.)
-        static_assert(!std::is_move_assignable_v<typename std::iterator_traits<typename Container::iterator>::reference>);
-        while (first != last)
-        {
-            if (std::invoke(predicate, *first))
-            {
-                first = container.erase(first);
-            }
-            else
-            {
-                ++first;
-            }
-        }
-    }
-    return oldSize - container.size();
-}
-
-template<typename Container, typename Predicate>
-typename Container::size_type erase_if(
-    Container& container,
-    Predicate&& predicate = Predicate()
-)
-{
-    return erase_if(container, std::begin(container), std::end(container), std::forward<Predicate>(predicate));
-}
 
 class ObservableVector :
     public tc::container::seq::Wrapper<

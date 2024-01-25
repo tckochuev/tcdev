@@ -17,20 +17,20 @@ set(CMAKE_AUTORCC ON)
 add_executable(
     ${TARGET_NAME}
     main.cpp
-    NS.h
-    Error.h
-    Error.ipp
-    Error.cpp
-    Utils.h
-    AbstractWindowPositioner.h
-    AbstractWindowPositioner.cpp
-    Container.h
-    SequencedSet.h
-    SequencedSet.ipp
-    OrderableSequencedSet.h
-    OrderableSequencedSet.ipp
-    AnyIterator.h
-    IExporterAsImages.h
+    #NS.h
+    VSError.h
+    VSError.ipp
+    VSError.cpp
+    VSUtils.h
+    #AbstractWindowPositioner.h
+    #AbstractWindowPositioner.cpp
+    VSContainer.h
+    #SequencedSet.h
+    #SequencedSet.ipp
+    #OrderableSequencedSet.h
+    #OrderableSequencedSet.ipp
+    #AnyIterator.h
+    #IExporterAsImages.h
 )
 
 target_include_directories(
@@ -42,9 +42,9 @@ target_include_directories(
 )
 
 target_link_libraries(
-	${TARGET_NAME} 
+	${TARGET_NAME}
 	PRIVATE
 	${Boost_LIBRARIES}
 	Qt5::Gui
-	Qt5::Core	
+	Qt5::Core
 )
