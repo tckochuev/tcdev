@@ -1081,6 +1081,7 @@ public:
 	using value_type = typename Super::value_type;
 	using iterator = typename Super::iterator;
 	using Super::insert;
+	using Super::lower_bound;
 
 	iterator insert(const value_type& v) {
 		return Accessor::insert(derived(), v);
@@ -1091,6 +1092,7 @@ public:
 
 protected:
 	using Super::derived;
+	using Super::key;
 
 	using Super::Super;
 	Wrapper(const Wrapper&) = default;
@@ -1133,6 +1135,7 @@ public:
 	using size_type = typename Super::size_type;
 	using Super::size;
 	using Super::insert;
+	using Super::lower_bound;
 
 	std::pair<iterator, bool> insert(const value_type& v) {
 		return Accessor::insert(derived(), v);
@@ -1143,6 +1146,7 @@ public:
 
 protected:
 	using Super::derived;
+	using Super::key;
 
 	using Super::Super;
 	Wrapper(const Wrapper&) = default;
@@ -1153,7 +1157,7 @@ protected:
 	template<typename V>
 	std::pair<iterator, bool> doInsert(V&& v) {
 		size_type prev = size();
-		iterator it = Super::insert(std::forward<V>(v));
+		iterator it = insert(lower_bound(key(v)), std::forward<V>(v));
 		return {it, size() > prev};
 	}
 
@@ -1183,25 +1187,21 @@ public:
 	using key_compare = typename Wrapper::key_compare;
 	using value_compare = typename Wrapper::value_compare;
 
-	Wrapper() :
-		Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr))
-	{}
-	Wrapper(const key_compare& comp) :
-		Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr), comp)
+	Wrapper() = default;
+	Wrapper(const key_compare& comp) : Base(comp)
 	{}
 	template<typename InputIterator>
 	Wrapper(InputIterator first, InputIterator last, const key_compare& comp) :
 		Base(first, last, comp)
 	{}
 	template<typename InputIterator>
-	Wrapper(InputIterator first, InputIterator last) :
-		Wrapper(first, last, key_compare())
+	Wrapper(InputIterator first, InputIterator last) : Base(first, last)
 	{}
 	Wrapper(std::initializer_list<value_type> il, const key_compare& comp) :
-		Wrapper(il.begin(), il.end(), comp)
+		Base(il, comp)
 	{}
 	Wrapper(std::initializer_list<value_type> il) :
-		Wrapper(il.begin(), il.end())
+		Base(il)
 	{}
 
 	key_compare key_comp() const {
@@ -1240,7 +1240,7 @@ private:
 	};
 };
 
-}
+} //namespace ord.
 
 namespace unord
 {
@@ -1445,8 +1445,7 @@ private:
 	};
 };
 
-}
-
+} //namespace unord.
 } //namespace base.
 
 namespace ord
@@ -1481,69 +1480,23 @@ template<
 	typename Base,
 	typename Traits = DefaultTraits<typename Base::Container>
 >
-class Wrapper : public Base, public Traits
+class Wrapper :
+	public tc::container::assoc::base::ord::Wrapper<
+		tc::container::assoc::base::multi::Wrapper<Base, Traits>
+	>
 {
+protected:
+	using Super = tc::container::assoc::base::ord::Wrapper<
+		tc::container::assoc::base::multi::Wrapper<Base, Traits>
+	>;
 public:
-	using Derived = typename Base::Derived;
-	using value_type = typename Wrapper::value_type;
-	using key_compare = typename Wrapper::key_compare;
-	using value_compare = typename Wrapper::value_compare;
-
-	Wrapper() :
-		Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr))
-	{}
-	Wrapper(const key_compare& comp) :
-		Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr), comp)
-	{}
-	template<typename InputIterator>
-	Wrapper(InputIterator first, InputIterator last, const key_compare& comp) :
-		Base(first, last, comp)
-	{}
-	template<typename InputIterator>
-	Wrapper(InputIterator first, InputIterator last) :
-		Wrapper(first, last, key_compare())
-	{}
-	Wrapper(std::initializer_list<value_type> il, const key_compare& comp) :
-		Wrapper(il.begin(), il.end(), comp)
-	{}
-	Wrapper(std::initializer_list<value_type> il) :
-		Wrapper(il.begin(), il.end())
-	{}
-
-	key_compare key_comp() const {
-		return Accessor::key_comp(derived());
-	}
-	value_compare value_comp() const {
-		return Accessor::value_comp(derived());
-	}
+	using Super::Super;
 
 protected:
-	using Base::derived;
-	using Base::m_container;
-
-	using Base::Base;
 	Wrapper(const Wrapper&) = default;
 	Wrapper(Wrapper&&) noexcept = default;
 	Wrapper& operator=(const Wrapper&) = default;
 	Wrapper& operator=(Wrapper&&) noexcept = default;
-
-	key_compare doKeyComp() const {
-		return m_container.key_comp();
-	}
-	value_compare doValueComp() const {
-		return m_container.value_comp();
-	}
-
-private:
-	struct Accessor : Derived
-	{
-		static key_compare key_comp(const Derived& d) {
-			return (d.*&Accessor::doKeyComp)();
-		}
-		static value_compare value_comp(const Derived& d) {
-			return (d.*&Accessor::doValueComp)();
-		}
-	};
 };
 
 } //namespace multi.
@@ -1551,63 +1504,122 @@ private:
 namespace uniq
 {
 
+/**@tparam Base is either tc::container::revers::Wrapper or tc::container::Wrapper*/
 template<
 	typename Base,
 	typename Traits = DefaultTraits<typename Base::Container>
 >
-class Wrapper : tc::container::assoc::ord::multi::Wrapper<Base, Traits>
+class Wrapper :
+	public tc::container::assoc::base::ord::Wrapper<
+		tc::container::assoc::base::uniq::Wrapper<Base, Traits>
+	>
 {
 protected:
-	using Super = tc::container::assoc::ord::multi::Wrapper<Base, Traits>;
+	using Super = tc::container::assoc::base::ord::Wrapper<
+		tc::container::assoc::base::uniq::Wrapper<Base, Traits>
+	>;
 public:
-	using Derived = typename Base::Derived;
-	using value_type = typename Super::value_type;
-	using key_type = typename Super::key_type;
-	using iterator = typename Super::iterator;
-	using const_iterator = typename Super::const_iterator;
-	using size_type = typename Super::size_type;
-	using Super::size;
-	using Super::insert;
 	using Super::Super;
 
-	std::pair<iterator, bool> insert(const value_type& v) {
-		return Accessor::insert(derived(), v);
-	}
-	std::pair<iterator, bool> insert(value_type&& v) {
-		return Accessor::insert(derived(), std::move(v));
-	}
-
 protected:
-	using Super::derived;
-
 	Wrapper(const Wrapper&) = default;
-	Wrapper(Wrapper&&) = default;
+	Wrapper(Wrapper&&) noexcept = default;
 	Wrapper& operator=(const Wrapper&) = default;
 	Wrapper& operator=(Wrapper&&) noexcept = default;
-
-	template<typename V>
-	std::pair<iterator, bool> doTryInsert(V&& v) {
-		size_type prev = size();
-		iterator it = Super::insert(std::forward<V>(v));
-		return {it, size() > prev};
-	}
-
-private:
-	struct Accessor : Derived
-	{
-		template<typename V>
-		static std::pair<iterator, bool> insert(Derived& d, V&& v) {
-			return (d.*&Accessor::template doTryInsert<V>)(std::forward<V>(v));
-		}
-	};
 };
 
 } //namespace uniq.
-
 } //namespace ord.
 
-} // assoc
+namespace unord
+{
 
+template<
+	typename Key,
+	typename Hash,
+	typename KeyEq,
+	typename ConstLocalIterator,
+	typename LocalIterator = ConstLocalIterator
+>
+struct Traits : tc::container::assoc::base::Traits<Key>
+{
+	using hasher = Hash;
+	using key_equal = KeyEq;
+	using local_iterator = LocalIterator;
+	using const_local_iterator = ConstLocalIterator;
+};
+
+template<
+	typename Container,
+	typename Key = typename Container::key_type,
+	typename Hash = typename Container::hasher,
+	typename KeyEq = typename Container::key_equal,
+	typename ConstLocalIterator = typename Container::const_local_iterator,
+	typename LocalIterator = ConstLocalIterator
+>
+struct DefaultTraits :
+	Traits<Key, Hash, KeyEq, ConstLocalIterator, LocalIterator>
+{};
+
+namespace multi
+{
+
+/**@tparam Base is either tc::container::revers::Wrapper or tc::container::Wrapper*/
+template<
+	typename Base,
+	typename Traits = DefaultTraits<typename Base::Container>
+>
+class Wrapper :
+	public tc::container::assoc::base::unord::Wrapper<
+		tc::container::assoc::base::multi::Wrapper<Base, Traits>
+	>
+{
+protected:
+	using Super = tc::container::assoc::base::unord::Wrapper<
+		tc::container::assoc::base::multi::Wrapper<Base, Traits>
+	>;
+public:
+	using Super::Super;
+
+protected:
+	Wrapper(const Wrapper&) = default;
+	Wrapper(Wrapper&&) noexcept = default;
+	Wrapper& operator=(const Wrapper&) = default;
+	Wrapper& operator=(Wrapper&&) noexcept = default;
+};
+
+} //namespace multi.
+
+namespace uniq
+{
+
+/**@tparam Base is either tc::container::revers::Wrapper or tc::container::Wrapper*/
+template<
+	typename Base,
+	typename Traits = DefaultTraits<typename Base::Container>
+>
+class Wrapper :
+	public tc::container::assoc::base::unord::Wrapper<
+		tc::container::assoc::base::uniq::Wrapper<Base, Traits>
+	>
+{
+protected:
+	using Super = tc::container::assoc::base::unord::Wrapper<
+		tc::container::assoc::base::uniq::Wrapper<Base, Traits>
+	>;
+public:
+	using Super::Super;
+
+protected:
+	Wrapper(const Wrapper&) = default;
+	Wrapper(Wrapper&&) noexcept = default;
+	Wrapper& operator=(const Wrapper&) = default;
+	Wrapper& operator=(Wrapper&&) noexcept = default;
+};
+
+} //namespace uniq.
+} //namespace unord.
+} //namespace assoc.
 } //tc::container
 
 #endif

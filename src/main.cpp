@@ -1,11 +1,5 @@
 #include <iostream>
 
-#include <vector>
-#include <set>
-#include <optional>
-
-#include "VSUtils.h"
-
 #include <boost/signals2.hpp>
 
 #include <vector>
@@ -92,7 +86,7 @@ protected:
 };
 
 class ObservableSet :
-    public tc::container::assoc::Wrapper<
+    public tc::container::assoc::ord::uniq::Wrapper<
         tc::container::revers::Wrapper<ObservableSet, std::set<int>>
     >
 {
