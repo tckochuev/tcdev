@@ -1124,7 +1124,7 @@ template<
 	typename Base,
 	typename Traits
 >
-class Wrapper : tc::container::assoc::base::Wrapper<Base, Traits>
+class Wrapper : public tc::container::assoc::base::Wrapper<Base, Traits>
 {
 protected:
 	using Super = tc::container::assoc::base::Wrapper<Base, Traits>;
@@ -1413,7 +1413,7 @@ private:
 		}
 		template<typename Key>
 		size_type bucket(const Derived& d, Key&& key) const {
-			return (d.*&Accessor::template doBucket)(std::forward<Key>(key));
+			return (d.*&Accessor::template doBucket<Key>)(std::forward<Key>(key));
 		}
 		size_type bucket_size(const Derived& d, size_type n) const {
 			return (d.*&Accessor::doBucketSize)(n);

@@ -102,19 +102,21 @@ public:
     boost::signals2::signal<void(size_type, const_iterator)> erased;
 
 protected:
-    template<typename OutputIterator>
-    void doExtract(const_iterator first, const_iterator last, OutputIterator out)
+    iterator doErase(const_iterator first, const_iterator last)
     {
         if(first != last)
         {
             aboutToBeErased(first, last);
             size_type oldSize = size();
-            Wrapper::doExtract(first, last, out);
+            auto it = Wrapper::doErase(first, last);
             erased(oldSize - size(), last);
+            return it;
         }
+        return last;
     }
-    iterator doInsert(const_iterator pos, node_type&& node) {
-        auto r = Wrapper::doInsert(pos, std::move(node));
+    template<typename V>
+    iterator doInsert(const_iterator pos, V&& v) {
+        auto r = Wrapper::doInsert(pos, std::forward<V>(v));
         inserted(r);
         return r;
     }
