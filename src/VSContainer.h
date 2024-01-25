@@ -651,10 +651,6 @@ public:
 		assign(il);
 		return derived();
 	}
-	template<typename... Args>
-	iterator emplace(const_iterator pos, Args&&... args) {
-		return Accessor::emplace(derived(), pos, std::forward<Args>(args)...);
-	}
 	template<typename InputIterator>
 	iterator insert(const_iterator pos, InputIterator first, InputIterator last) {
 		return Accessor::insert(derived(), pos, first, last);
@@ -701,20 +697,18 @@ protected:
 	Wrapper& operator=(const Wrapper&) = default;
 	Wrapper& operator=(Wrapper&&) noexcept = default;
 
-	template<typename... Args>
-	iterator doEmplace(const_iterator pos, Args&&... args) {
-		//same as insert by default.
-		return insert(pos, value_type(std::forward<Args>(args)...));
-	}
 	template<typename InputIterator>
 	iterator doInsert(const_iterator pos, InputIterator first, InputIterator last) {
 		return m_container.insert(pos, first, last);
 	}
-	iterator doInsertOne(const_iterator pos, const value_type& v) {
-		return insert(pos, &v, std::next(&v));
-	}
-	iterator doInsertOneRV(const_iterator pos, value_type&& v) {
-		return insert(pos, std::move_iterator(&v), std::move_iterator(std::next(&v)));
+	template<typename V>
+	iterator doInsertOne(const_iterator pos, V&& v) {
+		if constexpr (std::is_rvalue_reference_v<decltype(v)>) {
+			return insert(pos, std::move_iterator(&v), std::move_iterator(std::next(&v)));
+		}
+		else {
+			return insert(pos, &v, std::next(&v));
+		}
 	}
 	iterator doInsertN(const_iterator pos, size_type n, const value_type& v) {
 		auto [first, last] = makeValueIteratorRange(n, v);
@@ -762,21 +756,14 @@ protected:
 private:
 	struct Accessor : Derived
 	{
-		template<typename... Args>
-		static iterator emplace(Derived& d, const_iterator pos, Args&&... args) {
-			auto memfn = &Accessor::template doEmplace<Args...>;
-			return (d.*memfn)(pos, std::forward<Args>(args)...);
-		}
 		template<typename InputIterator>
 		static iterator insert(Derived& d, const_iterator pos, InputIterator first, InputIterator last) {
 			auto memfn = &Accessor::template doInsert<InputIterator>;
 			return (d.*memfn)(pos, first, last);
 		}
-		static iterator insert(Derived& d, const_iterator pos, const value_type& v) {
-			return (d.*&Accessor::doInsertOne)(pos, v);
-		}
-		static iterator insert(Derived& d, const_iterator pos, value_type&& v) {
-			return (d.*&Accessor::doInsertOneRV)(pos, std::move(v));
+		template<typename V>
+		static iterator insert(Derived& d, const_iterator pos, V&& v) {
+			return (d.*&Accessor::template doInsertOne<V>)(pos, std::forward<V>(v));
 		}
 		static iterator insert(Derived& d, const_iterator pos, size_type n, const value_type& v) {
 			return (d.*&Accessor::doInsertN)(pos, n, v);
@@ -809,7 +796,7 @@ private:
 
 }
 
-namespace assoc
+namespace assoc::ord
 {
 
 template<
@@ -880,8 +867,7 @@ public:
 	{}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
-		clear();
-		insert(il);
+		Accessor::assign(derived(), il);
 		return derived();
 	}
 	key_compare key_comp() const {
@@ -889,10 +875,6 @@ public:
 	}
 	value_compare value_comp() const {
 		return Accessor::value_comp(derived());
-	}
-	template<typename... Args>
-	iterator emplace_hint(const_iterator pos, Args&&... args) {
-		return Accessor::emplace_hint(derived(), pos, std::forward<Args>(args)...);
 	}
 	iterator insert(const_iterator pos, const value_type& v) {
 		return Accessor::insert(derived(), pos, v);
@@ -906,19 +888,6 @@ public:
 	}
 	void insert(std::initializer_list<value_type> il) {
 		return Accessor::insert(derived(), il);
-	}
-	iterator insert(const_iterator pos, node_type&& node) {
-		return Accessor::insert(derived(), pos, std::move(node));
-	}
-	template<typename Key>
-	node_type extract(Key&& key) {
-		return Accessor::extract(derived(), std::forward<Key>(key));
-	}
-	node_type extract(const_iterator pos) {
-		return Accessor::extract(derived(), pos);
-	}
-	void merge(Derived& other) {
-		return Accessor::merge(derived(), other);
 	}
 	template<typename Key>
 	size_type erase(Key&& key) {
@@ -985,15 +954,9 @@ protected:
 	value_compare doValueComp() const {
 		return m_container.value_comp();
 	}
-	template<typename... Args>
-	iterator doEmplaceHint(const_iterator pos, Args&&... args) {
-		return insert(pos, makeNode(std::forward<Args>(args)...));
-	}
-	iterator doInsertHint(const_iterator pos, const value_type& v) {
-		return insert(pos, makeNode(v));
-	}
-	iterator doInsertHintRV(const_iterator pos, value_type&& v) {
-		return insert(pos, makeNode(std::move(v)));
+	template<typename V>
+	iterator doInsertHint(const_iterator pos, V&& v) {
+		return m_container.insert(pos, std::forward<V>(v));
 	}
 	template<typename InputIterator>
 	void doInsertRange(InputIterator first, InputIterator last) {
@@ -1004,60 +967,23 @@ protected:
 	void doInsertIL(std::initializer_list<value_type> il) {
 		insert(il.begin(), il.end());
 	}
-	iterator doInsert(const_iterator pos, node_type&& node) {
-		return m_container.insert(pos, std::move(node));
-	}
-	template<typename F>
-	void doExtract(const_iterator first, const_iterator last, F&& forEachNode)
-	{
-		while(first != last) {
-			std::invoke(std::forward<F>(forEachNode), m_container.extract(first++));
-		}
-	}
-	template<typename Key>
-	node_type doExtractKey(Key&& key) {
-		if(auto it = find(key); it != end()) {
-			return extract(it);
-		}
-		else {
-			return node_type();
-		}
-	}
-	node_type doExtractOne(const_iterator pos) {
-		assert(pos != end());
-		node_type node; auto f = [&node](node_type&& n) { node = std::move(n); };
-		Accessor::extract(derived(), pos, std::next(pos), f);
-		assert(!node.empty());
-		return node;
-	}
-	void doMerge(Derived& other) {
-		for (iterator it = other.begin(); it != other.end();)
-		{
-			if(find(key(*it)) == end())
-			{
-				derived().insert(other.extract(it++));
-			}
-			else {
-				++it;
-			}
-		}
+	void doAssign(std::initializer_list<value_type> il) {
+		clear();
+		insert(il);
 	}
 	template<typename Key>
 	size_type doEraseKey(Key&& key) {
 		size_type oldSize = size();
 		auto [first, last] = equal_range(std::forward<Key>(key));
-		Accessor::extract(derived(), first, last);
+		erase(first, last);
 		return oldSize - size();
 	}
 	iterator doEraseOne(const_iterator pos) {
 		assert(pos != end());
-		iterator r = std::next(pos);
-		Accessor::extract(derived(), pos, std::next(pos));
-		return r;
+		return erase(pos, std::next(pos));
 	}
 	iterator doErase(const_iterator first, const_iterator last) {
-		Accessor::extract(derived(), first, last);
-		return last;
+		return m_container.erase(first, last);
 	}
 	void doClear() {
 		erase(begin(), end());
@@ -1098,23 +1024,6 @@ protected:
 	std::pair<const_iterator, const_iterator> doEqualRangeConst(Key&& key) const {
 		return m_container.equal_range(std::forward<Key>(key));
 	}
-
-	template<typename V>
-	decltype(auto) key(V&& v) {
-		if constexpr (std::is_same_v<key_type, value_type>) {
-			return std::forward<V>(v);
-		}
-		else {
-			auto&& [key, value] = std::forward<V>(v);
-			return std::forward<decltype(key)>(key);
-		}
-	}
-	template<typename... Args>
-	node_type makeNode(Args&&... args) {
-		decltype(m_container) c;
-		c.emplace(std::forward<Args>(args)...);
-		return c.extract(c.begin());
-	}
 private:
 	struct Accessor : Derived
 	{
@@ -1124,16 +1033,9 @@ private:
 		static value_compare value_comp(const Derived& d) {
 			return (d.*&Accessor::doValueComp)();
 		}
-		template<typename... Args>
-		static iterator emplace_hint(Derived& d, const_iterator pos, Args&&... args) {
-			auto memfn = &Accessor::template doEmplaceHint<Args...>;
-			return (d.*memfn)(pos, std::forward<Args>(args)...);
-		}
-		static iterator insert(Derived& d, const_iterator pos, const value_type& v) {
-			return (d.*&Accessor::doInsertHint)(pos, v);
-		}
-		static iterator insert(Derived& d, const_iterator pos, value_type&& v) {
-			return (d.*&Accessor::doInsertHintRV)(pos, std::move(v));
+		template<typename V>
+		static iterator insert(Derived& d, const_iterator pos, V&& v) {
+			return (d.*&Accessor::template doInsertHint<V>)(pos, std::forward<V>(v));
 		}
 		template<typename InputIterator>
 		static void insert(Derived& d, InputIterator first, InputIterator last) {
@@ -1143,27 +1045,8 @@ private:
 		static void insert(Derived& d, std::initializer_list<value_type> il) {
 			(d.*&Accessor::doInsertIL)(il);
 		}
-		static iterator insert(Derived& d, const_iterator pos, node_type&& node) {
-			return (d.*&Accessor::doInsert)(pos, std::move(node));
-		}
-		template<typename F>
-		static void extract(Derived& d, const_iterator first, const_iterator last, F&& forEachNode) {
-			auto memfn = &Accessor::template doExtract<F>;
-			(d.*memfn)(first, last, std::forward<F>(forEachNode));
-		}
-		static void extract(Derived& d, const_iterator first, const_iterator last) {
-			extract(d, first, last, tc::NOP<void, node_type&&>{});
-		}
-		template<typename Key>
-		static node_type extract(Derived& d, Key&& key) {
-			auto memfn = &Accessor::template doExtractKey<Key>;
-			return (d.*memfn)(std::forward<Key>(key));
-		}
-		static node_type extract(Derived& d, const_iterator pos) {
-			return (d.*&Accessor::doExtractOne)(pos);
-		}
-		static void merge(Derived& d, const Derived& other) {
-			return (d.*&Accessor::doMerge)(other);
+		static void assign(Derived& d, std::initializer_list<value_type> il) {
+			(d.*&Accessor::doAssign)(il);
 		}
 		template<typename Key>
 		static size_type erase(Derived& d, Key&& key) {
@@ -1234,10 +1117,48 @@ template<
 	typename Base,
 	typename Traits = DefaultTraits<typename Base::Container>
 >
-class Wrapper : tc::container::assoc::Wrapper<Base, Traits>
+class Wrapper : tc::container::assoc::ord::Wrapper<Base, Traits>
 {
 public:
+	using Derived = typename Base::Derived;
+	using value_type = typename Base::value_type;
+	using key_type = typename Base::key_type;
+	using iterator = typename Base::iterator;
+	using const_iterator = typename Base::const_iterator;
 	using Base::Base;
+	using Base::lower_bound;
+	using Base::insert;
+
+	std::pair<iterator, bool> insert(const value_type& v);
+	std::pair<iterator, bool> insert(value_type&& v);
+
+protected:
+	Wrapper(const Wrapper&) = default;
+	Wrapper(Wrapper&&) = default;
+	Wrapper& operator=(const Wrapper&) = default;
+	Wrapper& operator=(Wrapper&&) noexcept = default;
+
+	const key_type& doKey(const value_type& v) {
+		if constexpr (std::is_same_v<key_type, value_type>) {
+			return v;
+		}
+		else {
+			const auto& [key, mapped] = v;
+			return key;
+		}
+	}
+
+	template<typename V>
+	std::pair<iterator, bool> doTryInsert(V&& v) {
+		const key_type& key = Accessor::key
+	}
+
+private:
+	struct Accessor
+	{
+
+	};
+
 };
 
 }
