@@ -251,5 +251,7 @@ int main()
     EvenCountingList l2(l);
     std::cout << l2.evenCount() << std::endl;
 
+    boost::system::generic_category();
+
     return 0;
 }

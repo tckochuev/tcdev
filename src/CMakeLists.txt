@@ -1,9 +1,9 @@
 set(TARGET_NAME "${PROJECT_NAME}")
 
 #boost
-find_package(Boost 1.62.0 REQUIRED filesystem serialization regex)
-add_compile_definitions(_HAS_AUTO_PTR_ETC=1)
-set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.62.0 EXACT COMPONENTS system REQUIRED)
+#add_compile_definitions(_HAS_AUTO_PTR_ETC=1)
+#set(Boost_USE_STATIC_LIBS ON)
 
 #qt
 find_package(Qt5 REQUIRED COMPONENTS Core Gui)
@@ -25,6 +25,7 @@ add_executable(
     #AbstractWindowPositioner.h
     #AbstractWindowPositioner.cpp
     VSContainer.h
+    VSSequencedSet.h
     #SequencedSet.h
     #SequencedSet.ipp
     #OrderableSequencedSet.h

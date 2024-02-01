@@ -531,6 +531,42 @@ bool contains(InputRange&& range, const Value& value) {
 	return find(range, value) != boost::end(range);
 }
 
+template<typename Value, typename State = ptrdiff_t>
+class SameValueIterator :
+	public boost::iterator_facade<SameValueIterator<Value, State>, Value, std::random_access_iterator_tag>
+{
+public:
+	template<typename V, typename S>
+	SameValueIterator(V&& value, S&& state) : value(std::forward<V>(value)), state(std::forward<S>(state))
+	{}
+
+private:
+	typename SameValueIterator::reference dereference() const {
+		return value;
+	}
+	bool equal(const SameValueIterator& other) const {
+		return state == other.state;
+	}
+	void increment() {
+		++state;
+	}
+	void decrement() {
+		--state;
+	}
+	void advance(typename SameValueIterator::difference_type n) {
+		state += n;
+	}
+	typename SameValueIterator::difference_type distance_to(const SameValueIterator& other) const {
+		return other.state - state;
+	}
+
+	std::remove_const_t<Value> value;
+	State state;
+
+	friend class boost::iterator_core_access;
+};
+
+
 } //namespace tc
 
 #endif

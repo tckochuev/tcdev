@@ -333,6 +333,8 @@ public:
 	}
 
 protected:
+	using Wrapper_ = Wrapper;
+
 	Wrapper() = default;
 	Wrapper(const Wrapper&) = default;
 	Wrapper(Wrapper&&) noexcept = default;
@@ -537,11 +539,12 @@ public:
 	}
 
 protected:
-	using Super = tc::container::Wrapper<Derived, Container, Traits>;
-	using Super::m_container;
-	using Super::derived;
+	//using Super = tc::container::Wrapper<Derived, Container, Traits>;
+	using Wrapper::Wrapper_::m_container;
+	using Wrapper::Wrapper_::derived;
 
-	using Super::Super;
+	//using Super::Super;
+	using Wrapper::Wrapper_::Wrapper_;
 	Wrapper() = default;
 	Wrapper(const Wrapper&) = default;
 	Wrapper(Wrapper&&) noexcept = default;
@@ -580,41 +583,6 @@ private:
 };
 
 }
-
-template<typename Value, typename State = ptrdiff_t>
-class SameValueIterator :
-	public boost::iterator_facade<SameValueIterator<Value, State>, Value, std::random_access_iterator_tag>
-{
-public:
-	template<typename V, typename S>
-	SameValueIterator(V&& value, S&& state) : value(std::forward<V>(value)), state(std::forward<S>(state))
-	{}
-
-private:
-	typename SameValueIterator::reference dereference() const {
-		return value;
-	}
-	bool equal(const SameValueIterator& other) const {
-		return state == other.state;
-	}
-	void increment() {
-		++state;
-	}
-	void decrement() {
-		--state;
-	}
-	void advance(typename SameValueIterator::difference_type n) {
-		state += n;
-	}
-	typename SameValueIterator::difference_type distance_to(const SameValueIterator& other) const {
-		return other.state - state;
-	}
-
-	std::remove_const_t<Value> value;
-	State state;
-
-	friend class boost::iterator_core_access;
-};
 
 namespace seq
 {
@@ -1115,7 +1083,7 @@ private:
 	};
 };
 
-} //namespace multi.
+} //namespace multi
 
 namespace uniq
 {
@@ -1171,7 +1139,7 @@ private:
 	};
 };
 
-} //namespace uniq.
+} //namespace uniq
 
 namespace ord
 {
@@ -1240,7 +1208,7 @@ private:
 	};
 };
 
-} //namespace ord.
+} //namespace ord
 
 namespace unord
 {
@@ -1445,8 +1413,8 @@ private:
 	};
 };
 
-} //namespace unord.
-} //namespace base.
+} //namespace unord
+} //namespace base
 
 namespace ord
 {
@@ -1499,7 +1467,7 @@ protected:
 	Wrapper& operator=(Wrapper&&) noexcept = default;
 };
 
-} //namespace multi.
+} //namespace multi
 
 namespace uniq
 {
@@ -1528,8 +1496,8 @@ protected:
 	Wrapper& operator=(Wrapper&&) noexcept = default;
 };
 
-} //namespace uniq.
-} //namespace ord.
+} //namespace uniq
+} //namespace ord
 
 namespace unord
 {
@@ -1588,7 +1556,7 @@ protected:
 	Wrapper& operator=(Wrapper&&) noexcept = default;
 };
 
-} //namespace multi.
+} //namespace multi
 
 namespace uniq
 {
@@ -1617,9 +1585,9 @@ protected:
 	Wrapper& operator=(Wrapper&&) noexcept = default;
 };
 
-} //namespace uniq.
-} //namespace unord.
-} //namespace assoc.
+} //namespace uniq
+} //namespace unord
+} //namespace assoc
 } //tc::container
 
 #endif
