@@ -333,7 +333,7 @@ public:
 	}
 
 protected:
-	using Wrapper_ = Wrapper;
+	using ContainerWrapper = Wrapper;
 
 	Wrapper() = default;
 	Wrapper(const Wrapper&) = default;
@@ -539,12 +539,11 @@ public:
 	}
 
 protected:
-	//using Super = tc::container::Wrapper<Derived, Container, Traits>;
-	using Wrapper::Wrapper_::m_container;
-	using Wrapper::Wrapper_::derived;
+	using ReversibleContainerWrapper = Wrapper;
+	using Wrapper::ContainerWrapper::m_container;
+	using Wrapper::ContainerWrapper::derived;
 
-	//using Super::Super;
-	using Wrapper::Wrapper_::Wrapper_;
+	using Wrapper::ContainerWrapper::ContainerWrapper;
 	Wrapper() = default;
 	Wrapper(const Wrapper&) = default;
 	Wrapper(Wrapper&&) noexcept = default;
@@ -586,12 +585,13 @@ private:
 
 namespace seq
 {
-/**@tparam Base is either ReversibleContainerWrapper or ContainerWrapper*/
+
+/**@tparam Base should extend tc::container::Wrapper or be it.*/
 template<typename Base>
 class Wrapper : public Base
 {
 public:
-	using Derived = typename Base::Derived;
+	using Derived = typename Wrapper::Derived;
 	using value_type = typename Wrapper::value_type;
 	using iterator = typename Wrapper::iterator;
 	using const_iterator = typename Wrapper::const_iterator;
@@ -600,20 +600,12 @@ public:
 	using Base::end;
 	using Base::empty;
 
-	Wrapper() : Wrapper(static_cast<value_type*>(nullptr), static_cast<value_type*>(nullptr)) {}
-	Wrapper(size_type n, const value_type& v) :
-		Wrapper(
-			SameValueIterator<const std::reference_wrapper<const value_type>>(v, 0),
-			SameValueIterator<const std::reference_wrapper<const value_type>>(v, n)
-		)
-	{}
+	using Base::Base;
+	Wrapper() = default;
+	Wrapper(size_type n, const value_type& v) : Base(n, v) {}
 	template<typename InputIterator>
-	Wrapper(InputIterator first, InputIterator last) :
-		Base(first, last)
-	{}
-	Wrapper(std::initializer_list<value_type> il) :
-		Wrapper(il.begin(), il.end())
-	{}
+	Wrapper(InputIterator first, InputIterator last) : Base(first, last) {}
+	Wrapper(std::initializer_list<value_type> il) : Base(il) {}
 
 	Derived& operator=(std::initializer_list<value_type> il) {
 		assign(il);
@@ -656,10 +648,10 @@ public:
 	}
 
 protected:
+	using SequenceContainerWrapper = Wrapper;
 	using Base::m_container;
 	using Base::derived;
 
-	using Base::Base;
 	Wrapper(const Wrapper&) = default;
 	Wrapper(Wrapper&&) noexcept = default;
 	Wrapper& operator=(const Wrapper&) = default;
@@ -762,7 +754,7 @@ private:
 	};
 };
 
-}
+} //namespace seq
 
 namespace assoc
 {
@@ -775,6 +767,7 @@ struct Traits
 	using key_type = Key;
 };
 
+/**@tparam Base should extend tc::container::Wrapper or be it.*/
 template<
 	typename Base,
 	typename Traits
@@ -782,7 +775,7 @@ template<
 class Wrapper : public Base, public Traits
 {
 public:
-	using Derived = typename Base::Derived;
+	using Derived = typename Wrapper::Derived;
 	using value_type = typename Wrapper::value_type;
 	using iterator = typename Wrapper::iterator;
 	using const_iterator = typename Wrapper::const_iterator;
@@ -791,6 +784,8 @@ public:
 	using Base::size;
 	using Base::begin;
 	using Base::end;
+
+	using Base::Base;
 
 	Derived& operator=(std::initializer_list<value_type> il) {
 		Accessor::assign(derived(), il);
@@ -859,10 +854,11 @@ public:
 		return Accessor::equal_range(derived(), std::forward<Key>(key));
 	}
 protected:
+	using AssociativeContainerWrapper = Wrapper;
 	using Base::derived;
 	using Base::m_container;
 
-	using Base::Base;
+	Wrapper() = default;
 	Wrapper(const Wrapper&) = default;
 	Wrapper(Wrapper&&) noexcept = default;
 	Wrapper& operator=(const Wrapper&) = default;
@@ -1036,6 +1032,7 @@ private:
 namespace multi
 {
 
+///
 template<
 	typename Base,
 	typename Traits
