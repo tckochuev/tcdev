@@ -86,12 +86,17 @@ protected:
 };
 
 class ObservableSet :
-    public tc::container::assoc::ord::uniq::Wrapper<
-        tc::container::revers::Wrapper<ObservableSet, std::set<int>>
-    >
+	public tc::container::assoc::uniq::Wrapper<
+		tc::container::assoc::ord::Wrapper<
+			tc::container::revers::Wrapper<ObservableSet, std::set<int>>
+		>
+	>
+    // public tc::container::assoc::ord::uniq::Wrapper<
+    //     tc::container::revers::Wrapper<ObservableSet, std::set<int>>
+    // >
 {
 public:
-    using Wrapper::Wrapper;
+    using ObservableSet::AssociativeUniqueContainerWrapper::AssociativeUniqueContainerWrapper;
     ObservableSet(const ObservableSet&) = delete;
     ObservableSet(ObservableSet&&) = delete;
     ObservableSet& operator=(const ObservableSet&) = delete;
