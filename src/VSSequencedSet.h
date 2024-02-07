@@ -98,14 +98,11 @@ public:
 	void relocate(iterator pos, iterator first, iterator last);
 	template<typename InputIterator> void rearrange(InputIterator first);
 
-protected:
-	using
-	using Super =
-
+protected
 	template<typename T>
-	std::pair<iterator, bool> doTryInsert(iterator pos, const value_type& v)
+	std::pair<iterator, bool> doTryInsert(iterator pos, const value_type& v);
 
-	template<typename T>
+	//template<typename T>
 
 };
 
