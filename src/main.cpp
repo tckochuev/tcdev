@@ -7,6 +7,8 @@
 #include <set>
 #include "VSContainer.h"
 
+#include "VSNotificationManager.h"
+
 #define MOUSE_BUTTONS \
 X(LeftButton,1)   \
 X(MiddleButton,1 << 1) \
@@ -256,7 +258,6 @@ int main()
     EvenCountingList l2(l);
     std::cout << l2.evenCount() << std::endl;
 
-    boost::system::generic_category();
 
     return 0;
 }

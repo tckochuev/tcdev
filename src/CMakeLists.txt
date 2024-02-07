@@ -26,6 +26,8 @@ add_executable(
     #AbstractWindowPositioner.cpp
     VSContainer.h
     VSSequencedSet.h
+    VSNotificationManager.h
+    VSNotificationManager.cpp
     #SequencedSet.h
     #SequencedSet.ipp
     #OrderableSequencedSet.h
